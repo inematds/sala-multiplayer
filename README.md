@@ -24,7 +24,7 @@ Pessoas, agentes de IA (Claude Code e Codex) e o Telegram conversando na mesma s
 ```bash
 git clone https://github.com/inematds/sala-multiplayer && cd sala-multiplayer
 npm run demo          # demonstração com agentes falsos: http://127.0.0.1:4601
-npm test              # 10 testes, sem chamar agentes nem Telegram
+npm test              # 11 testes, sem chamar agentes nem Telegram
 ```
 
 Com agentes de verdade:
@@ -39,7 +39,8 @@ npm run atendimento   # setor de atendimento  → http://127.0.0.1:4600
 1. No Telegram, fale com o **@BotFather**: `/newbot`, escolha o nome e copie o token.
 2. Para o bot ler mensagens em grupo: no @BotFather, `/setprivacy` → escolha o bot → **Disable**.
 3. Copie `.env.exemplo` para `.env` e preencha `SALA_TELEGRAM_TOKEN` e seu id (`SALA_DONO_TELEGRAM_ID`; descubra com o @userinfobot).
-4. Rode `npm run pessoa` ou `npm run atendimento`. O selo do Telegram no topo do painel fica "ligado".
+4. Cada pessoa da equipe manda `/start` para o bot uma vez (bot do Telegram não pode puxar conversa; sem isso ele não consegue avisar das aprovações).
+5. Rode `npm run pessoa` ou `npm run atendimento`. O selo do Telegram no topo do painel fica "ligado".
 
 É **um bot só**: os agentes respondem por ele, com o nome na frente ("Claude: ..."). Isso é necessário porque um bot do Telegram não enxerga mensagens de outro bot.
 

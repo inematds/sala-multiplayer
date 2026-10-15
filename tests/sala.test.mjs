@@ -92,6 +92,14 @@ test('atendimento: equipe conversando no painel sem @ não aciona agente', async
   assert.equal(banco.eventos().length, 1);
 });
 
+test('mensagem do dono vinda do Telegram não volta como eco; do painel, vai para a conversa', async () => {
+  const { sala, enviados } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'tg:42', texto: '@codex oi, sem ferramenta', via: 'telegram' });
+  assert.deepEqual(enviados.map((e) => e.t), ['Codex: [Codex] recebi: @codex oi, sem ferramenta']);
+  await sala.receber({ de: 'dono', conversa: 'tg:42', texto: 'recado do painel' });
+  assert.equal(enviados.at(-2).t, 'Dono: recado do painel'); // depois vem a resposta do agente padrão
+});
+
 test('chamado é gravado e numerado', async () => {
   const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-ch-'));
   const ctx = { dados, conversa: 'tg:1', perfil: {}, raiz: RAIZ };
