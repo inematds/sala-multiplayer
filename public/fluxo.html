@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sala multiplayer · Fluxo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<p style="margin:10px 16px 6px;color:var(--mut);font-size:.9rem">Tudo o que passa pela sala, na ordem em que chega: Telegram, painel, agentes, ferramentas e avisos.</p>
+<div class="fluxo-cab" id="cab">
+  <button class="tab on" data-t="pessoa">Pessoas</button>
+  <button class="tab on" data-t="agente">Agentes</button>
+  <button class="tab on" data-t="ferramenta">Ferramentas</button>
+  <button class="tab on" data-t="sistema">Avisos</button>
+  <button class="btn" id="pausa" style="margin-left:auto">Pausar</button>
+</div>
+<main class="fluxo" id="fluxo"></main>
+<script type="module">
+import { S, iniciar, nav, icone, esc, hora, part, classe, nomeConversa } from '/comum.js';
+const ligados = new Set(['pessoa', 'agente', 'ferramenta', 'sistema']);
+let pausado = false;
+const box = document.getElementById('fluxo');
+
+await iniciar((tipo, d) => { if (tipo === 'evento' && !pausado) add(d, true); });
+nav('fluxo');
+document.querySelectorAll('#cab .tab').forEach((b) => b.onclick = () => {
+  b.classList.toggle('on');
+  b.classList.contains('on') ? ligados.add(b.dataset.t) : ligados.delete(b.dataset.t);
+  tudo();
+});
+document.getElementById('pausa').onclick = (e) => { pausado = !pausado; e.target.textContent = pausado ? 'Continuar' : 'Pausar'; if (!pausado) tudo(); };
+
+function linha(e) {
+  const de = part(e.de), c = classe(de);
+  if (!ligados.has(de.tipo === 'pessoa' ? 'pessoa' : de.tipo)) return '';
+  return `<div class="fl"><span class="h mono">${hora(e.hora)}</span>
+    <span class="q"><span class="t-${c}">${icone(c)}</span><b>${esc(de.nome)}</b>&nbsp;→ ${esc(part(e.para).nome)}</span>
+    <span class="x">${e.conversa !== 'painel' ? `<span class="tg">${esc(nomeConversa(e.conversa))}</span> ` : ''}${e.tipo !== 'mensagem' && e.tipo !== 'resposta' ? `<span class="tg">${e.tipo}</span> ` : ''}${esc(e.texto)}</span></div>`;
+}
+function add(e) {
+  const fim = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.insertAdjacentHTML('beforeend', linha(e));
+  while (box.children.length > 600) box.firstElementChild.remove();
+  if (fim) box.scrollTop = box.scrollHeight;
+}
+function tudo() {
+  box.innerHTML = S.estado.eventos.map(linha).join('') || '<div class="fl"><span></span><span class="x">Nada ainda.</span></div>';
+  box.scrollTop = box.scrollHeight;
+}
+tudo();
+</script>
+</body>
+</html>

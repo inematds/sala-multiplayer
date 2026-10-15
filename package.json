@@ -1,0 +1,15 @@
+{
+  "name": "sala-multiplayer",
+  "version": "0.1.0",
+  "description": "Pessoas, agentes de IA (Claude e Codex) e Telegram na mesma sala, com painel ao vivo.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "pessoa": "node --no-warnings server.mjs --perfil pessoa",
+    "atendimento": "node --no-warnings server.mjs --perfil atendimento",
+    "demo": "node --no-warnings server.mjs --perfil atendimento --demo --porta 4601",
+    "test": "node --no-warnings --test tests/*.test.mjs"
+  },
+  "license": "MIT"
+}

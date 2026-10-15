@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sala multiplayer · Grafo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<p style="margin:10px 16px;color:var(--mut);font-size:.9rem">Quem conversa com quem. A linha engrossa conforme a conversa cresce e acende quando passa uma mensagem. Clique num participante para abrir a conversa dele.</p>
+<main class="grafo-wrap">
+  <div class="palco" id="palco"><svg id="svg" role="img" aria-label="grafo de conversas"></svg>
+    <div class="legenda" id="legenda"></div></div>
+  <aside class="recente"><h3>Agora</h3><div id="recente"></div></aside>
+</main>
+<script type="module">
+import { S, iniciar, nav, icone, esc, hora, part, classe, ROTULO } from '/comum.js';
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('svg');
+const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let pos = {};
+
+await iniciar((tipo, d) => { if (tipo === 'evento') { desenhar(); pulso(d); recente(); } if (tipo === 'participante' || tipo === 'ativos') desenhar(); });
+nav('grafo');
+document.getElementById('legenda').innerHTML = ['pessoa', 'cliente', 'agente', 'ferramenta', 'sistema'].map((c) => `<span class="t-${c}">${icone(c)}<span style="color:var(--mut)">${ROTULO[c]}</span></span>`).join('');
+
+// Colunas: pessoas da equipe e clientes à esquerda, agentes no meio, ferramentas à direita, sistema embaixo.
+function layout(W, H) {
+  const col = { pessoa: [], agente: [], ferramenta: [], sistema: [] };
+  for (const p of S.estado.participantes) (col[p.tipo] || col.sistema).push(p);
+  const estreito = W < 600;
+  const xs = { pessoa: W * (estreito ? 0.16 : 0.15), agente: W * 0.5, ferramenta: W * (estreito ? 0.84 : 0.85) };
+  pos = {};
+  for (const [t, lista] of Object.entries(col)) {
+    if (t === 'sistema') { lista.forEach((p) => { pos[p.id] = { x: W * 0.5, y: H - 62, p }; }); continue; }
+    const topo = 80, fundo = H - 150;
+    lista.forEach((p, i) => { pos[p.id] = { x: xs[t], y: lista.length === 1 ? (topo + fundo) / 2 : topo + (i * (fundo - topo)) / (lista.length - 1), p }; });
+  }
+}
+
+function curva(a, b) {
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - Math.min(60, Math.abs(a.x - b.x) * 0.15) - (a.x === b.x ? 40 : 0);
+  return `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`;
+}
+
+function desenhar() {
+  const W = svg.clientWidth || 800, H = svg.clientHeight || 500;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  layout(W, H);
+  const pares = {};
+  const recentes = S.estado.eventos.slice(-400);
+  const agora = Date.now();
+  for (const e of recentes) {
+    if (!pos[e.de] || !pos[e.para] || e.de === e.para) continue;
+    const k = [e.de, e.para].sort().join('|');
+    pares[k] ??= { a: e.de, b: e.para, n: 0, ult: 0 };
+    pares[k].n++;
+    pares[k].ult = Math.max(pares[k].ult, Date.parse(e.hora));
+  }
+  svg.innerHTML = '';
+  const g1 = document.createElementNS(NS, 'g'), g2 = document.createElementNS(NS, 'g');
+  for (const [k, p] of Object.entries(pares)) {
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', curva(pos[p.a], pos[p.b]));
+    path.setAttribute('class', 'aresta' + (agora - p.ult < 60000 ? ' quente' : ''));
+    path.setAttribute('stroke-width', String(1.5 + Math.log2(1 + p.n) * 1.6));
+    path.dataset.k = k;
+    const t = document.createElementNS(NS, 'title'); t.textContent = `${part(p.a).nome} ↔ ${part(p.b).nome}: ${p.n} mensagens`;
+    path.append(t);
+    g1.append(path);
+  }
+  for (const { x, y, p } of Object.values(pos)) {
+    const c = classe(p);
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', `no t-${c}`);
+    g.setAttribute('transform', `translate(${x},${y})`);
+    g.setAttribute('tabindex', '0');
+    const ativo = S.estado.ativos.includes(p.id);
+    g.innerHTML = `<circle r="22" fill="var(--bg2)" stroke="currentColor" stroke-width="${ativo ? 3.5 : 1.6}"/>
+      ${ativo && !calmo ? '<circle r="22" fill="none" stroke="currentColor" stroke-width="2"><animate attributeName="r" from="22" to="34" dur="1.2s" repeatCount="indefinite"/><animate attributeName="opacity" from=".8" to="0" dur="1.2s" repeatCount="indefinite"/></circle>' : ''}
+      <g transform="translate(-9,-9) scale(.75)" class="ic" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icone(c).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>
+      <text y="40" text-anchor="middle">${esc(p.nome.length > 22 ? p.nome.slice(0, 21) + '…' : p.nome)}</text>
+      <text class="pa" y="54" text-anchor="middle">${ROTULO[c]}${ativo ? ' · trabalhando' : ''}</text>`;
+    g.onclick = () => { location.href = `/?p=${encodeURIComponent(p.id)}`; };
+    g2.append(g);
+  }
+  svg.append(g1, g2);
+}
+
+// Uma bolinha percorre a linha de quem mandou para quem recebeu.
+function pulso(e) {
+  if (calmo || !pos[e.de] || !pos[e.para] || e.de === e.para) return;
+  const k = [e.de, e.para].sort().join('|');
+  const path = svg.querySelector(`path[data-k="${CSS.escape(k)}"]`);
+  if (!path) return;
+  const ida = e.de < e.para;
+  const L = path.getTotalLength();
+  const dot = document.createElementNS(NS, 'circle');
+  dot.setAttribute('r', '6'); dot.setAttribute('fill', 'var(--amb)');
+  svg.append(dot);
+  const t0 = performance.now();
+  (function passo(t) {
+    const f = Math.min(1, (t - t0) / 900);
+    const pt = path.getPointAtLength((ida ? f : 1 - f) * L);
+    dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+    if (f < 1) requestAnimationFrame(passo); else dot.remove();
+  })(t0);
+}
+
+function recente() {
+  document.getElementById('recente').innerHTML = S.estado.eventos.slice(-12).reverse().map((e) =>
+    `<div class="rl"><div class="c">${hora(e.hora)} · ${esc(part(e.de).nome)} → ${esc(part(e.para).nome)}</div>${esc(e.texto.slice(0, 140))}</div>`).join('') || 'Nada ainda.';
+}
+
+new ResizeObserver(() => desenhar()).observe(svg);
+desenhar(); recente();
+</script>
+</body>
+</html>

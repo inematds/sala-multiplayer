@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sala multiplayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<section class="topo">
+  <div class="kpi"><div class="r">Mensagens na última hora</div><div class="v" id="k-msgs">0</div><div class="s">pessoas, agentes e ferramentas</div></div>
+  <div class="kpi"><div class="r">Agentes trabalhando</div><div class="v" id="k-ativos">0</div><div class="s" id="k-ativos-n">nenhum agora</div></div>
+  <div class="kpi chama" id="k-aprov-box" role="button" tabindex="0"><div class="r">Aprovações pendentes</div><div class="v" id="k-aprov">0</div><div class="s">clique para ver e decidir</div></div>
+  <div class="kpi"><div class="r">Respostas de agentes hoje</div><div class="v" id="k-hoje">0</div><div class="s" id="k-teto">teto diário</div></div>
+</section>
+<section class="aprov" id="aprov"><h3>Esperando aprovação humana</h3><div id="aprov-lista"></div></section>
+<main class="sala">
+  <aside class="lado">
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-t="todos">Todos</button>
+      <button class="tab" data-t="pessoa">Pessoas</button>
+      <button class="tab" data-t="agente">Agentes</button>
+      <button class="tab" data-t="ferramenta">Ferramentas</button>
+    </div>
+    <div class="lista" id="lista"></div>
+  </aside>
+  <section class="chat">
+    <div class="cab">
+      <select id="conversa" aria-label="conversa"></select>
+      <span class="filtro" id="filtro"></span>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="dica" id="dica"></div>
+    <form class="comp" id="comp">
+      <select id="eu" aria-label="você é"></select>
+      <textarea id="texto" rows="1" placeholder="Escreva... use @claude ou @codex para chamar um agente"></textarea>
+      <button class="btn pri" type="submit">Enviar</button>
+    </form>
+  </section>
+</main>
+<script type="module">
+import { S, iniciar, nav, icone, esc, hora, part, classe, nomeConversa, postar, ROTULO } from '/comum.js';
+
+let aba = 'todos', sel = new URLSearchParams(location.search).get('p'), conversa = 'todas';
+const $ = (id) => document.getElementById(id);
+let eu = (() => { try { return localStorage.getItem('sala-eu'); } catch { return null; } })();
+
+await iniciar((tipo) => { render(tipo); });
+nav('sala');
+const equipe = S.estado.perfil.equipe;
+if (!equipe.some((p) => p.id === eu)) eu = equipe[0].id;
+$('eu').innerHTML = equipe.map((p) => `<option value="${p.id}" ${p.id === eu ? 'selected' : ''}>Você é: ${esc(p.nome)}</option>`).join('');
+$('eu').onchange = (e) => { eu = e.target.value; try { localStorage.setItem('sala-eu', eu); } catch {} render(); };
+$('dica').textContent = `Agentes: ${S.estado.participantes.filter((p) => p.tipo === 'agente').map((p) => '@' + p.id).join(', ')} · teto de ${S.estado.perfil.teto_turnos} turnos entre agentes`;
+document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { aba = b.dataset.t; document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b)); render(); });
+$('conversa').onchange = (e) => { conversa = e.target.value; render(); };
+$('k-aprov-box').onclick = () => $('aprov').classList.toggle('aberta');
+$('texto').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('comp').requestSubmit(); } });
+$('comp').onsubmit = async (e) => {
+  e.preventDefault();
+  const texto = $('texto').value.trim();
+  if (!texto) return;
+  $('texto').value = '';
+  await postar('/api/mensagem', { de: eu, conversa: conversa === 'todas' ? 'painel' : conversa, texto });
+};
+
+function contagem(id) { return S.estado.eventos.filter((e) => e.de === id || e.para === id).length; }
+
+function render() {
+  const e = S.estado;
+  // topo
+  $('k-msgs').textContent = e.stats.msgsHora;
+  $('k-ativos').textContent = e.ativos.length;
+  $('k-ativos-n').textContent = e.ativos.length ? e.ativos.map((id) => part(id).nome).join(', ') : 'nenhum agora';
+  $('k-aprov').textContent = e.pendentes.length;
+  $('k-aprov-box').classList.toggle('tem', e.pendentes.length > 0);
+  $('k-hoje').textContent = e.stats.chamadasHoje;
+  $('k-teto').textContent = `teto diário: ${e.perfil.teto_diario}`;
+  // aprovações (não redesenha um rascunho que está sendo editado)
+  const lista = $('aprov-lista');
+  const emEdicao = lista.contains(document.activeElement);
+  if (!emEdicao) {
+    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => `
+      <div class="ap" data-id="${a.id}">
+        <div class="q">#${a.id} · ${esc(part(a.de).nome)} → ${esc(part(a.para).nome)} · ${esc(nomeConversa(a.conversa))} · ${hora(a.hora)}</div>
+        <textarea aria-label="texto da resposta">${esc(a.texto)}</textarea>
+        <div class="acoes"><button class="btn pri" data-a="aprovar">Aprovar e enviar</button><button class="btn" data-a="recusar">Recusar</button></div>
+      </div>`).join('') : '<div class="q">Nada esperando.</div>';
+    lista.querySelectorAll('button[data-a]').forEach((b) => b.onclick = async () => {
+      const box = b.closest('.ap');
+      b.disabled = true;
+      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea').value });
+      if (r.erro) { b.disabled = false; alertaInline(box, r.erro); }
+    });
+  }
+  // participantes
+  const ps = e.participantes.filter((p) => p.tipo !== 'sistema' && (aba === 'todos' || p.tipo === aba));
+  $('lista').innerHTML = ps.map((p) => {
+    const c = classe(p);
+    return `<div class="pp ${sel === p.id ? 'on' : ''}" data-id="${p.id}" role="button" tabindex="0">
+      <span class="t-${c}" title="${ROTULO[c]}">${icone(c)}</span>
+      <div><div class="nm">${esc(p.nome)}</div><div class="pa">${ROTULO[c]}${p.papel ? ' · ' + esc(p.papel) : ''}${p.origem === 'telegram' ? ' · Telegram' : ''}</div></div>
+      ${e.ativos.includes(p.id) ? '<span class="vivo" title="trabalhando"></span>' : ''}
+      <span class="n">${contagem(p.id)}</span></div>`;
+  }).join('') || '<div class="pa" style="padding:8px">Ninguém aqui ainda.</div>';
+  $('lista').querySelectorAll('.pp').forEach((d) => d.onclick = () => { sel = sel === d.dataset.id ? null : d.dataset.id; render(); });
+  // conversas
+  const convs = ['painel', ...new Set(e.eventos.map((x) => x.conversa).filter((c) => c !== 'painel'))];
+  $('conversa').innerHTML = `<option value="todas">Todas as conversas</option>` + convs.map((c) => `<option value="${c}" ${c === conversa ? 'selected' : ''}>${esc(nomeConversa(c))}</option>`).join('');
+  $('filtro').innerHTML = sel ? `Mostrando só ${esc(part(sel).nome)} <button type="button" id="limpa">limpar</button>` : '';
+  if (sel) $('limpa').onclick = () => { sel = null; render(); };
+  // mensagens
+  const box = $('msgs');
+  const noFim = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  const evs = e.eventos.filter((x) => (conversa === 'todas' || x.conversa === conversa) && (!sel || x.de === sel || x.para === sel)).slice(-250);
+  box.innerHTML = evs.map((x) => {
+    const de = part(x.de), para = part(x.para), c = classe(de);
+    const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso' }[x.tipo];
+    return `<div class="m ${x.tipo} ${x.de === eu ? 'meu' : ''}">
+      <div class="c"><span class="t-${c}">${icone(c)}</span><b>${esc(de.nome)}</b>${x.para && x.para !== 'sala' ? ` → ${esc(para.nome)}` : ''} · ${hora(x.hora)}
+      ${selo ? `<span class="tg">${selo}</span>` : ''}${conversa === 'todas' && x.conversa !== 'painel' ? `<span class="tg">${esc(nomeConversa(x.conversa))}</span>` : ''}</div>
+      <div class="x">${esc(x.texto)}</div></div>`;
+  }).join('') || '<div class="pa">Sem mensagens ainda. Escreva abaixo ou mande algo para o bot no Telegram.</div>';
+  if (noFim) box.scrollTop = box.scrollHeight;
+}
+function alertaInline(box, msg) { const d = document.createElement('div'); d.className = 'q'; d.style.color = 'var(--bad)'; d.textContent = msg; box.append(d); }
+render();
+$('msgs').scrollTop = $('msgs').scrollHeight;
+</script>
+</body>
+</html>
