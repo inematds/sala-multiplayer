@@ -3,41 +3,9 @@
 Cada linha é um assunto em andamento: leia o snapshot do assunto que for continuar. Gravado por handoff-grava.py.
 
 <!-- handoff-indice:inicio -->
-- `sala-v01` · handoffs/history/2026-10-15T232248Z-sala-v01.md · 15/10 20:22
+- nenhum
 <!-- handoff-indice:fim -->
 
 ---
 
-Cópia integral do snapshot mais recente (handoffs/history/2026-10-15T232248Z-sala-v01.md):
-
-# Handoff — 2026-10-15 — sala-multiplayer v0.1 em construção
-
-## Projeto e escopo
-~/projetos/sala-multiplayer (repo novo inematds/sala-multiplayer, ainda não criado no GitHub). Nei pediu: solução pequena com dois perfis (pessoa + seus agentes; setor de atendimento), entradas Telegram (bot novo) e chat no painel, agentes Claude e Codex pela assinatura. Painel: grafo de quem fala com quem, fluxo rolando, e Sala (participantes à esquerda com filtros Todos/Pessoas/Agentes/Ferramentas, chat à direita, painel no topo).
-
-## Objetivo atual
-v0.1 rodando localmente com testes (node --test, motor falso) + push no repo novo. Conselhos (~/projetos/7conselho) ficam para a v0.2, pedido do Nei.
-
-## Estado aceito
-- [confirmed] lib/modelos.mjs, lib/banco.mjs (node:sqlite), lib/ferramentas.mjs, lib/agentes.mjs escritos
-## Proposto / tentado, não confirmado
-- [unverified] lib/sala.mjs, lib/telegram.mjs, server.mjs, public/, perfis/, testes — a escrever
-## Decisões e restrições
-- Zero dependências (Node 24: node:sqlite, SSE, fetch). Sem login na v0.1. E-mail fora. Ferramentas por protocolo de texto "FERRAMENTA: nome | entrada". Um bot só no Telegram como porta (bot não vê outro bot). Modelos de ~/.config/inema/modelos.env nível EXECUTOR.
-## Arquivos alterados
-- lib/*.mjs (novos)
-## Memória e regras duráveis tocadas
-- nenhuma
-## Verificação
-- Não rodado: nada ainda
-## Estado em execução
-- nenhum
-## Perguntas abertas e adiados
-- Adiado: conselhos (v0.2), login, e-mail
-## Próxima ação exata
-Escrever sala.mjs, telegram.mjs, server.mjs, painel, perfis e testes; rodar testes; criar repo e push.
-## Mapa de retomada
-- lib/sala.mjs
-- lib/banco.mjs
-## Checagem de compartilhamento
-- Sem segredos: sim
+Nenhum trabalho aberto.
