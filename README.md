@@ -68,6 +68,7 @@ SALA_TIZA_EMAIL=email-da-conta-dela
 
 - `/` vira uma página de apresentação com o botão **Entrar com a conta INEMA.PRO**. A sala, o grafo, o fluxo, a config e as APIs só abrem para quem está na sala.
 - O login é o do inema.pro (Google ou link por email). A sala não guarda senha nem token: repassa o cookie de sessão ao `www.inema.pro/api/assinatura` e lê só o veredito. **Só assinantes em dia** entram.
+- **O dono também entra por usuário e senha**, sem conta INEMA.PRO: usuário = id do dono no perfil (`dono`), senha = `SALA_DONO_SENHA`. Sessão assinada por 30 dias; trocar a senha derruba as sessões; 5 erros seguidos bloqueiam o IP por 10 min.
 - Quem você é vem do email: o dono e a equipe pelos emails do `.env`; o "Você é" vira só um rótulo. O dono logado aprova sem digitar a senha.
 - **Convidado entra direto** se o dono convidou o email antes (`/convidar email nome` no Telegram ou "Convidar pela web" na tela Config).
 - **Os outros pedem e esperam**: o pedido chega ao dono no Telegram (`/aceitar N`) e em "Aprovações pendentes" no painel. A pessoa fica em `/aguardando`, que abre a sala sozinha quando o dono aceita.

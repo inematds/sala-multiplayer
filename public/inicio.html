@@ -30,6 +30,13 @@
   .passos li::before{content:counter(p);flex:none;width:32px;height:32px;border-radius:12px;background:var(--amb);color:var(--amb-txt);font:800 1rem Sora,sans-serif;display:grid;place-items:center}
   .passos b{display:block}
   .passos span{color:var(--mut)}
+  .dono{max-width:520px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:14px}
+  .dono summary{cursor:pointer;font:600 1rem Sora,Inter,sans-serif}
+  .dono form{display:grid;gap:10px;margin-top:14px}
+  .dono label{display:grid;gap:4px;color:var(--mut);font-size:.92rem}
+  .dono input{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+  .dono button{justify-self:start;background:transparent;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font:600 .95rem Sora,Inter,sans-serif;cursor:pointer}
+  .dono .erro{color:var(--bad);margin:0}
   .rod{border-top:1px solid var(--line);margin-top:56px;padding-top:18px;color:var(--mut);font-size:.92rem;display:flex;gap:16px;flex-wrap:wrap}
   .rod a{color:var(--sky);text-decoration:none;font-weight:700}
   .rod a.cod{color:var(--mut);font-weight:400}
@@ -45,6 +52,15 @@
     <a class="btn-g" href="/entrar">Entrar com a conta INEMA.PRO</a>
     <a class="btn-s" href="#como">Como funciona</a>
   </div>
+  <details class="dono" id="dono">
+    <summary>Entrar com usuário e senha da sala</summary>
+    <form method="post" action="/login">
+      <p class="erro" id="erro" hidden></p>
+      <label>Usuário <input name="usuario" autocomplete="username" required></label>
+      <label>Senha <input name="senha" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Entrar</button>
+    </form>
+  </details>
 
   <h2 id="como">Como funciona</h2>
   <div class="grade">
@@ -72,7 +88,10 @@
 </main>
 <script>
   try { if (localStorage.getItem('sala-tema') === 'light') document.body.classList.add('light'); } catch {}
-  if (new URLSearchParams(location.search).get('assinante') === 'nao') document.getElementById('sem-assinatura').hidden = false;
+  const q = new URLSearchParams(location.search);
+  if (q.get('assinante') === 'nao') document.getElementById('sem-assinatura').hidden = false;
+  const erro = { senha: 'Usuário ou senha errados.', muitas: 'Muitas tentativas erradas. Espere 10 minutos.' }[q.get('erro')];
+  if (erro) { const e = document.getElementById('erro'); e.textContent = erro; e.hidden = false; document.getElementById('dono').open = true; }
 </script>
 </body>
 </html>

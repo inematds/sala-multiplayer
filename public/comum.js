@@ -44,7 +44,7 @@ export function nav(ativa) {
       <a href="/fluxo" class="${ativa === 'fluxo' ? 'on' : ''}">Fluxo</a>
       <a href="/config" class="${ativa === 'config' ? 'on' : ''}">Config</a>
     </div>
-    ${e.eu ? `<span class="selo" title="${esc(e.eu.email || '')}">${esc(e.eu.nome)}${e.eu.dono ? ' · dono' : e.eu.papel === 'convidado' ? ' · convidado' : ''}</span>` : ''}
+    ${e.eu ? `<span class="selo" title="${esc(e.eu.email || '')}">${esc(e.eu.nome)}${e.eu.dono ? ' · dono' : e.eu.papel === 'convidado' ? ' · convidado' : ''}</span> <a class="inema" href="/sair">Sair</a>` : ''}
     <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
     <button class="tema" aria-label="tema claro ou escuro">${document.body.classList.contains('light') ? '☀️' : '🌙'}</button>`;
   el.querySelector('.tema').onclick = (ev) => {

@@ -10,7 +10,8 @@ import { criarTelegram } from './lib/telegram.mjs';
 import { claude, codex, falso } from './lib/agentes.mjs';
 import { lerModelos, lerNiveis } from './lib/modelos.mjs';
 import { CAMPOS_SALA, CAMPOS_AGENTE, senhaConfere } from './lib/config.mjs';
-import { criarAcesso, cookieVolta, VERIFICADOR, LOGIN_INEMA } from './lib/acesso.mjs';
+import crypto from 'node:crypto';
+import { criarAcesso, cookieVolta, criarSessoes, criarFreio, VERIFICADOR, LOGIN_INEMA } from './lib/acesso.mjs';
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i < 0 ? d : (process.argv[i + 1]?.startsWith('--') || i + 1 >= process.argv.length ? true : process.argv[i + 1]); };
@@ -152,7 +153,28 @@ const urlPublica = (process.env.SALA_URL_PUBLICA || 'https://salaconf.inema.pro'
 const PUBLICAS = { '/': 'inicio.html', '/inicio': 'inicio.html', '/aguardando': 'aguardando.html' };
 const PROTEGIDAS = new Set(['/sala', '/grafo', '/fluxo', '/config', '/sala.html', '/grafo.html', '/fluxo.html', '/config.html']);
 
+// O dono também entra por usuário (id do dono no perfil) e senha (SALA_DONO_SENHA), sem conta INEMA.PRO.
+const segredo = (() => {
+  if (!login) return '';
+  const arq = path.join(dados, 'segredo');
+  try { return fs.readFileSync(arq, 'utf8').trim(); } catch { /* primeira vez */ }
+  const novo = crypto.randomBytes(32).toString('hex');
+  fs.mkdirSync(dados, { recursive: true });
+  fs.writeFileSync(arq, novo + '\n', { mode: 0o600 });
+  return novo;
+})();
+const sessoes = login ? criarSessoes({ segredo, seguro: urlPublica.startsWith('https:') }) : null;
+const freio = criarFreio();
+const ipDe = (req) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+const formulario = (req) => new Promise((ok) => {
+  let s = ''; req.on('data', (d) => { s += d; if (s.length > 4000) req.destroy(); });
+  req.on('end', () => { try { ok(req.headers['content-type']?.includes('json') ? JSON.parse(s || '{}') : Object.fromEntries(new URLSearchParams(s))); } catch { ok({}); } });
+});
+
 async function identificar(req) {
+  const local = sessoes.ler(req.headers.cookie);
+  const doLocal = local && banco.participantes().find((p) => p.id === local && p.ativo !== 0);
+  if (doLocal) return { status: 200, email: doLocal.email, novos: [], eu: doLocal, via: 'senha' };
   const r = await acesso.quem(req.headers.cookie);
   const eu = r.status === 200 ? banco.porEmail(r.email) : null;
   return { ...r, eu: eu && eu.tipo === 'pessoa' ? eu : null };
@@ -187,6 +209,14 @@ const servidor = http.createServer(async (req, res) => {
     if (login) {
       const pub = PUBLICAS[url.pathname];
       if (req.method === 'GET' && pub) { res.writeHead(200, { 'content-type': TIPOS['.html'] }); return fs.createReadStream(path.join(RAIZ, 'public', pub)).pipe(res); }
+      if (req.method === 'POST' && url.pathname === '/login') {
+        const ip = ipDe(req), b = await formulario(req);
+        if (freio.bloqueado(ip)) return redirecionar(res, '/?erro=muitas#dono');
+        if (String(b.usuario || '').trim().toLowerCase() !== sala.dono || !senhaConfere(String(b.senha || ''))) { freio.errou(ip); return redirecionar(res, '/?erro=senha#dono'); }
+        freio.acertou(ip);
+        return redirecionar(res, '/sala', { 'set-cookie': sessoes.criar(sala.dono) });
+      }
+      if (url.pathname === '/sair') return redirecionar(res, '/', { 'set-cookie': sessoes.apagar() });
       const precisa = url.pathname === '/entrar' || url.pathname.startsWith('/api/') || PROTEGIDAS.has(url.pathname);
       if (precisa) {
         const id = await identificar(req);

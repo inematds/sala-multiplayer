@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { criarAcesso, cookiesSessao, cookieVolta } from '../lib/acesso.mjs';
+import { criarAcesso, cookiesSessao, cookieVolta, criarSessoes, criarFreio } from '../lib/acesso.mjs';
 import { abrirBanco } from '../lib/banco.mjs';
 import { criarSala } from '../lib/sala.mjs';
 import { falso } from '../lib/agentes.mjs';
@@ -105,7 +105,7 @@ test('servidor com login: página pública, /entrar, guarda das APIs e identidad
   const filho = spawn(process.execPath, ['--no-warnings', 'server.mjs', '--perfil', 'pessoa', '--porta', String(porta)], {
     cwd: RAIZ, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, SALA_LOGIN: 'inema', SALA_VERIFICADOR_URL: `http://127.0.0.1:${pv}/`, SALA_AGENTES: 'falso', SALA_DADOS: dados,
-      SALA_TELEGRAM_TOKEN: '', SALA_DONO_EMAIL: 'dono@x.com', SALA_TIZA_EMAIL: '', SALA_DONO_SENHA: '', SALA_HOST: '127.0.0.1' },
+      SALA_TELEGRAM_TOKEN: '', SALA_DONO_EMAIL: 'dono@x.com', SALA_TIZA_EMAIL: '', SALA_DONO_SENHA: 'senha-teste', SALA_HOST: '127.0.0.1' },
   });
   t.after(() => { filho.kill(); falsoV.close(); });
   await new Promise((ok, falha) => { filho.stdout.on('data', (d) => /\[sala\]/.test(d) && ok()); filho.on('exit', (c) => falha(new Error(`saiu ${c}`))); });
@@ -150,6 +150,38 @@ test('servidor com login: página pública, /entrar, guarda das APIs e identidad
   assert.equal(cv.status, 403);
 
   // Sessão renovada no inema.pro volta ao navegador.
+  // Dono por usuário e senha (sem conta INEMA.PRO).
+  const form = (u, p) => ir('/login', null, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `usuario=${u}&senha=${p}` });
+  assert.equal((await form('dono', 'errada')).headers.get('location'), '/?erro=senha#dono');
+  assert.equal((await form('tiza', 'senha-teste')).headers.get('location'), '/?erro=senha#dono', 'só o usuário do dono');
+  const ok = await form('dono', 'senha-teste');
+  assert.equal(ok.headers.get('location'), '/sala');
+  const sess = ok.headers.get('set-cookie').split(';')[0];
+  const ed = await (await ir('/api/estado', sess)).json();
+  assert.equal(ed.eu.id, 'dono'); assert.equal(ed.eu.dono, true);
+  assert.match((await ir('/sair', sess)).headers.get('set-cookie'), /sala_sessao=;.*Max-Age=0/);
+  for (let i = 0; i < 5; i++) await form('dono', 'x');
+  assert.equal((await form('dono', 'senha-teste')).headers.get('location'), '/?erro=muitas#dono', 'freio depois de 5 erros');
+
   const rn = await ir('/api/eu', SB('renova'));
   assert.match(rn.headers.get('set-cookie') || '', /sb-ref-auth-token=novo/);
+});
+
+test('sessão do dono por senha: assina, confere, expira e cai quando a senha muda', () => {
+  let senha = 'abc', t = 1000;
+  const s = criarSessoes({ segredo: 'seg', senha: () => senha, agora: () => t });
+  const cookie = s.criar('dono').split(';')[0];
+  assert.equal(s.ler(`x=1; ${cookie}`), 'dono');
+  assert.equal(s.ler(cookie.replace('dono.', 'tiza.')), null, 'trocar o id quebra a assinatura');
+  senha = 'nova';
+  assert.equal(s.ler(cookie), null, 'senha nova derruba a sessão');
+  senha = 'abc'; t += 31 * 864e5;
+  assert.equal(s.ler(cookie), null, 'vence em 30 dias');
+});
+
+test('freio: 5 erros bloqueiam o IP; acerto limpa', () => {
+  const f = criarFreio();
+  for (let i = 0; i < 5; i++) f.errou('1.2.3.4');
+  assert.equal(f.bloqueado('1.2.3.4'), true); assert.equal(f.bloqueado('5.6.7.8'), false);
+  f.acertou('1.2.3.4'); assert.equal(f.bloqueado('1.2.3.4'), false);
 });
