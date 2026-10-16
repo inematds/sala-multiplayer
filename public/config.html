@@ -14,6 +14,9 @@
   <form id="f">
     <section class="bloco"><h3>Sala</h3><div id="sala" class="campos"></div></section>
     <section class="bloco"><h3>Agentes</h3><div id="agentes"></div></section>
+    <section class="bloco"><h3>Convidados do Telegram</h3>
+      <p class="mut">A pessoa manda <code>/entrar</code> ao bot e você aceita aqui (Aprovações pendentes na Sala) ou no Telegram com <code>/aceitar N</code>. Desligar aqui ou com <code>/remover nome</code>; ela mesma sai com <code>/sair</code>. Usa a senha do dono abaixo.</p>
+      <div id="convidados"></div></section>
     <section class="bloco salvar">
       <label>Senha do dono <input id="senha" type="password" autocomplete="current-password"></label>
       <button class="btn pri" type="submit">Salvar mudanças</button>
@@ -22,9 +25,9 @@
   </form>
 </main>
 <script type="module">
-import { iniciar, nav, esc } from '/comum.js';
+import { S, iniciar, nav, esc } from '/comum.js';
 const $ = (id) => document.getElementById(id);
-await iniciar((tipo) => { if (tipo === 'config') carregar(); });
+await iniciar((tipo) => { if (tipo === 'config') carregar(); if (tipo === 'participante') convidados(); });
 nav('config');
 let C;
 const NIVEL = { super: 'super (o mais forte)', topo: 'topo', executor: 'executor (padrão)', menor: 'menor (rápido)' };
@@ -32,7 +35,7 @@ const NIVEL = { super: 'super (o mais forte)', topo: 'topo', executor: 'executor
 function campo(nome, def, valor, motor) {
   if (def.tipo === 'inteiro') return `<label>${esc(def.rotulo)} <input data-c="${nome}" type="number" min="${def.min}" max="${def.max}" value="${valor ?? ''}" placeholder="padrão"></label>`;
   const opc = def.opcoes.map((o) => {
-    const txt = nome.endsWith('.nivel') ? `${NIVEL[o]} · ${C.niveis?.[o]?.[motor]?.modelo || 'padrão do CLI'}` : (o || 'do nível');
+    const txt = nome.endsWith('.nivel') ? `${NIVEL[o]} · ${C.niveis?.[o]?.[motor]?.modelo || 'padrão do CLI'}` : ({ sim: 'sim', nao: 'não' }[o] ?? (o || 'do nível'));
     return `<option value="${o}" ${o === (valor ?? '') ? 'selected' : ''}>${esc(txt)}</option>`;
   }).join('');
   return `<label>${esc(def.rotulo)} <select data-c="${nome}">${opc}</select></label>`;
@@ -44,9 +47,24 @@ async function carregar() {
   $('agentes').innerHTML = C.agentes.map((a) => `<div class="ag"><b>@${esc(a.id)}</b> <span class="mut">${esc(a.nome)} · ${a.motor === 'codex' ? 'Codex' : 'Claude Code'}</span>
     <div class="campos">${Object.entries(C.campos_agente).map(([k, d]) => campo(`agente.${a.id}.${k}`, d, a[k], a.motor)).join('')}</div></div>`).join('');
   document.querySelectorAll('[data-c]').forEach((el) => { el.dataset.orig = el.value; });
+  convidados();
   if (!C.senha_definida) $('msg').textContent = 'SALA_DONO_SENHA está vazia no .env: pelo painel nada muda.';
 }
 
+const SAIDA = { saiu: 'saiu sozinho', removido: 'removido pelo dono', expirou: 'convite venceu' };
+function convidados() {
+  const lista = S.estado.participantes.filter((p) => p.papel === 'convidado');
+  $('convidados').innerHTML = lista.length ? lista.map((p) => `<div class="conv"><div><b>${esc(p.nome)}</b> <span class="mut">${p.ativo === 0 ? `desligado · ${SAIDA[p.saida] || 'fora'}` : 'na sala'} · desde ${new Date(p.desde || p.criado).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+    <button type="button" class="btn" data-conv="${esc(p.id)}" data-ativo="${p.ativo === 0 ? 1 : 0}">${p.ativo === 0 ? 'Religar' : 'Desligar'}</button></div>`).join('')
+    : '<p class="mut">Nenhum convidado ainda.</p>';
+  $('convidados').querySelectorAll('[data-conv]').forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    const r = await (await fetch('/api/convidado', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: b.dataset.conv, ativo: b.dataset.ativo === '1', senha: $('senha').value }) })).json();
+    $('msg').textContent = r.erro ? `Não mudou: ${r.erro}` : `${r.participante.nome}: ${r.participante.ativo ? 'na sala' : 'desligado'}.`;
+    $('msg').className = r.erro ? 'ruim' : 'bom';
+    b.disabled = false;
+  });
+}
 $('f').onsubmit = async (e) => {
   e.preventDefault();
   const mudancas = {};

@@ -159,3 +159,8 @@ body:has(.cfg){height:auto;overflow:auto}
 .cfg #msg{font-size:.9rem}.cfg #msg.ruim{color:var(--bad)}.cfg #msg.bom{color:var(--ok)}
 .ap .senha{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--mut);flex-wrap:wrap}
 .ap .senha input{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;max-width:180px}
+/* v0.5: resposta que só confirma (não chamou ninguém) e convidado desligado */
+.m.eco{opacity:.6}
+.pp.off{opacity:.55}
+.cfg .conv{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding:10px 0}
+.cfg .conv:first-child{border-top:0}

@@ -1,4 +1,4 @@
-// Confere as três telas num servidor já rodando: rolagem horizontal (360–1920), erros de console,
+// Confere as telas num servidor já rodando: rolagem horizontal (360–1920), erros de console,
 // e tira um print de cada uma. Uso:
 //   NODE_PATH=~/.npm-global/lib/node_modules node tools/checar.cjs [http://127.0.0.1:4601] [pasta-dos-prints]
 const { chromium } = require('playwright');
@@ -14,7 +14,7 @@ const path = require('path');
     const cons = [];
     page.on('console', (m) => { if (m.type() === 'error') cons.push(m.text()); });
     page.on('pageerror', (e) => cons.push(e.message));
-    for (const rota of ['/', '/grafo', '/fluxo']) {
+    for (const rota of ['/', '/grafo', '/fluxo', '/config']) {
       await page.goto(base + rota);
       await page.waitForTimeout(1200);
       const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);

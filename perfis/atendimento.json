@@ -22,6 +22,7 @@
   "dono": "supervisor",
   "aprovadores": ["supervisor", "atendente"],
   "teto_turnos": 6,
+  "teto_rodada": 8,
   "teto_diario": 300,
   "telegram": { "aceitar_desconhecidos": true, "papel_desconhecido": "cliente" }
 }

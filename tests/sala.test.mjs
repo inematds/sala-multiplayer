@@ -299,3 +299,220 @@ test('dono liga pessoa do perfil ao Telegram com /entrar: vale na hora e no rein
   criarSala({ ...base, banco: banco2 });
   assert.equal(banco2.porTelegram('555').id, 'tiza');
 });
+
+// ---------- v0.5: laço entre agentes, rodada e convidado pelo Telegram ----------
+import { mencoesDiretas, ehEco } from '../lib/sala.mjs';
+
+function montarComAvisos(id, extra = {}, motor = falso) {
+  const banco = abrirBanco(':memory:');
+  const avisos = [], enviados = [];
+  const externo = async (c, t) => { enviados.push({ c, t }); };
+  externo.avisar = async (tid, t) => { avisos.push({ tid: String(tid), t }); };
+  externo.avisarAprovadores = async (a) => { avisos.push({ tid: 'aprovadores', t: a.texto, a }); };
+  const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-v5-'));
+  const sala = criarSala({ perfil: { ...perfil(id), ...extra }, banco, motor, raiz: RAIZ, dados, externo });
+  return { banco, sala, avisos, enviados, dados };
+}
+
+test('menção direta: só o @ no começo da frase chama (textos reais da sala)', () => {
+  assert.deepEqual(mencoesDiretas('Dono, resumo do que espera por você:\n1. Aprovar o @topicos (responda "aprovo").\n2. Pedir ao @codex que comece o painel.\n3. Aprovar o @critico.'), []);
+  assert.deepEqual(mencoesDiretas('@codex, o Dono quer sua opinião sobre a proposta do agente "Crítico" (@critico)'), ['codex']);
+  assert.deepEqual(mencoesDiretas('@claude e @codex, vejam isto'), ['claude', 'codex']);
+  assert.deepEqual(mencoesDiretas('Concordo. @codex, revisa o trecho?'), ['codex']);
+  assert.deepEqual(mencoesDiretas('Dono, antes de aprovar os dois (@topicos e @critico), aponto riscos'), []);
+  assert.deepEqual(mencoesDiretas('- @revisor confere a ortografia'), ['revisor']);
+});
+
+test('eco: resposta que só confirma é reconhecida (textos reais da sala)', () => {
+  assert.equal(ehEco('@claude, combinado. Aguardo o Dono decidir se quer seguir com o painel.'), true);
+  assert.equal(ehEco('Certo. Sem novidades da minha parte até o Dono responder.'), true);
+  assert.equal(ehEco('@codex, combinado, estamos alinhados. A proposta do @critico fica parada até o Dono responder.'), true);
+  assert.equal(ehEco('@claude, eu faria o painel como parte da própria sala: uma lista de tópicos com título e resumo.'), false);
+  assert.equal(ehEco('Combinado, mas qual critério desambigua?'), false);
+});
+
+test('eco e citação não chamam outro agente; o eco fica marcado', async () => {
+  const { banco, sala } = montarComAvisos('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude so-confirma codex' });
+  const r = banco.eventos().filter((e) => e.tipo === 'resposta');
+  assert.equal(r.length, 1);
+  assert.equal(r[0].meta.eco, true);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude cita codex' });
+  assert.ok(!banco.eventos().some((e) => e.de === 'codex'), 'citar o nome no meio da frase não chama');
+});
+
+test('agente só chama de volta quem falou com ele se perguntar algo', async () => {
+  const motor = async ({ agente }) => (agente.id === 'claude' ? '@codex, escreve o comando?' : '@claude, pronto: ls -la.');
+  const { banco, sala } = montarComAvisos('pessoa', {}, motor);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude lista arquivos' });
+  assert.deepEqual(banco.eventos().filter((e) => e.tipo === 'resposta').map((e) => e.de), ['claude', 'codex']);
+  const [c, x] = banco.eventos().filter((e) => e.tipo === 'resposta');
+  assert.deepEqual(c.meta.chama, ['codex']);
+  assert.equal(x.meta.chama, undefined);
+});
+
+test('rodada: tudo o que uma mensagem provoca leva o id dela; pai aponta quem acionou', async () => {
+  const motor = async ({ agente }) => (agente.id === 'claude' ? '@codex, escreve o comando?' : 'ls -la');
+  const { banco, sala } = montarComAvisos('pessoa', {}, motor);
+  const m = await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude lista arquivos' });
+  const ev = banco.eventos();
+  assert.ok(ev.every((e) => e.rodada === m.id));
+  const [c, x] = ev.filter((e) => e.tipo === 'resposta');
+  assert.equal(c.pai, m.id);
+  assert.equal(x.pai, c.id);
+  assert.equal(banco.eventosDaRodada(m.id).length, 3);
+});
+
+test('teto da rodada soma todos os ramos e avisa uma vez só', async () => {
+  const { banco, sala } = montarComAvisos('pessoa', { teto_turnos: 30, teto_rodada: 5 });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude eco-laco @codex' });
+  assert.equal(banco.eventos().filter((e) => e.tipo === 'resposta').length, 5);
+  assert.equal(banco.eventos().filter((e) => e.tipo === 'sistema' && /Teto da rodada/.test(e.texto)).length, 1);
+  // Teto de turnos também avisa uma vez por rodada, mesmo com dois ramos batendo.
+  const b = montarComAvisos('pessoa', { teto_turnos: 2, teto_rodada: 30 });
+  await b.sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude e @codex, eco-laco @claude' });
+  assert.equal(b.banco.eventos().filter((e) => e.tipo === 'sistema' && /Teto de 2 turnos/.test(e.texto)).length, 1);
+});
+
+test('o prompt leva o estado da sala: agentes aprovados e o que espera o dono', async () => {
+  let visto = '';
+  const motor = async (ctx) => { visto = ctx.sistema; return falso(ctx); };
+  const { sala } = montarComAvisos('pessoa', {}, motor);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente topicos, sem ferramenta' });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex oi, sem ferramenta' });
+  assert.match(visto, /agentes na sala \(já aprovados\): @claude, @codex/);
+  assert.match(visto, /#1 agente @topicos/);
+  assert.match(visto, /Você \(@codex\) já está na sala/);
+});
+
+test('id em uso diz o motivo (proposta pendente ou agente que já existe)', async () => {
+  const { banco, sala } = montarComAvisos('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente duplo, sem ferramenta' });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente duplo, sem ferramenta' });
+  assert.match(banco.eventos().at(-1).texto, /em uso: proposta #1 ainda esperando o dono/);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente codex, sem ferramenta' });
+  assert.match(banco.eventos().at(-1).texto, /em uso: já é um agente da sala/);
+});
+
+test('convidado: pede com /entrar, só o dono aceita, conversa e não aprova nada', async () => {
+  const { banco, sala, avisos } = montarComAvisos('pessoa');
+  const r = await sala.pedirEntrada({ tid: 777, nome: 'Ana', usuario: 'ana' });
+  assert.equal(r.pedido.tipo, 'convite');
+  assert.match(r.pedido.texto, /Ana \(@ana\) pede para entrar/);
+  assert.ok(avisos.some((a) => a.tid === 'aprovadores' && a.a.id === r.pedido.id), 'dono avisado');
+  assert.equal((await sala.pedirEntrada({ tid: 777, nome: 'Ana' })).repetido.id, r.pedido.id, 'um pedido por vez');
+  assert.equal(banco.porTelegram('777'), undefined, 'não entra antes de aceitar');
+  await assert.rejects(sala.aprovar(r.pedido.id, 'tiza'), /só o dono/);
+  await assert.rejects(sala.recusar(r.pedido.id, 'tiza'), /só o dono/);
+  const a = await sala.aprovar(r.pedido.id, 'dono');
+  assert.equal(a.participante.papel, 'convidado');
+  assert.equal(banco.porTelegram('777').id, 'tg-777');
+  assert.ok(avisos.some((x) => x.tid === '777' && /entrou na sala/.test(x.t)));
+  assert.ok((await sala.pedirEntrada({ tid: 777, nome: 'Ana' })).ja);
+  await sala.receber({ de: 'tg-777', conversa: 'tg:777', texto: 'oi, sem ferramenta', via: 'telegram' });
+  assert.equal(banco.eventos().filter((e) => e.tipo === 'resposta').at(-1).de, 'claude', 'rota padrão do convidado');
+  await sala.receber({ de: 'tg-777', conversa: 'tg:777', texto: 'cria agente invasor', via: 'telegram' });
+  assert.ok(!banco.pendentes().some((x) => x.tipo === 'agente'), 'convidado não propõe agente');
+});
+
+test('convidado: recusar avisa; equipe não vira convidado', async () => {
+  const { sala, avisos } = montarComAvisos('pessoa');
+  const r = await sala.pedirEntrada({ tid: 778, nome: 'Bia' });
+  await sala.recusar(r.pedido.id, 'dono');
+  assert.ok(avisos.some((x) => x.tid === '778' && /não aceitou/.test(x.t)));
+  sala.ligarTelegram('tiza', '901', 'dono');
+  assert.ok((await sala.pedirEntrada({ tid: 901, nome: 'Tiza' })).ja, 'quem é da equipe já está');
+});
+
+test('convidado: teto de respostas por dia', async () => {
+  const { banco, sala } = montarComAvisos('pessoa', { teto_convidado: 1 });
+  await sala.aprovar((await sala.pedirEntrada({ tid: 779, nome: 'Cid' })).pedido.id, 'dono');
+  await sala.receber({ de: 'tg-779', conversa: 'tg:779', texto: 'um, sem ferramenta', via: 'telegram' });
+  await sala.receber({ de: 'tg-779', conversa: 'tg:779', texto: 'dois, sem ferramenta', via: 'telegram' });
+  assert.equal(banco.eventos().filter((e) => e.tipo === 'resposta').length, 1);
+  assert.match(banco.eventos().at(-1).texto, /Teto do convidado: Cid já usou as 1/);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex oi, sem ferramenta' });
+  assert.equal(banco.eventos().at(-1).de, 'codex', 'o teto do convidado não barra o dono');
+});
+
+test('convidado: /sair e /remover desligam; volta pede aprovação nova (ou não, pela configuração)', async () => {
+  const { banco, sala, avisos } = montarComAvisos('pessoa');
+  await sala.aprovar((await sala.pedirEntrada({ tid: 780, nome: 'Duda' })).pedido.id, 'dono');
+  await sala.sair('tg-780');
+  assert.equal(banco.porTelegram('780'), undefined, 'desligado não fala na sala');
+  assert.ok(banco.participantes().some((p) => p.id === 'tg-780' && p.ativo === 0 && p.saida === 'saiu'), 'histórico fica');
+  assert.ok((await sala.pedirEntrada({ tid: 780, nome: 'Duda' })).pedido, 'reaprovar=sim: pedido novo');
+  await sala.aprovar(banco.pendentes()[0].id, 'dono');
+  assert.equal(banco.porTelegram('780').id, 'tg-780', 'mesmo participante religado');
+  // reaprovar=nao: quem saiu sozinho volta direto; quem o dono removeu pede de novo.
+  sala.mudarConfig({ convidado_reaprovar: 'nao' }, 'dono');
+  await sala.sair('tg-780');
+  assert.ok((await sala.pedirEntrada({ tid: 780, nome: 'Duda' })).voltou);
+  await assert.rejects(sala.remover('duda', 'tiza'), /só o dono/);
+  assert.equal((await sala.remover('duda', 'dono')).ativo, 0, 'devolve o participante já desligado');
+  assert.ok(avisos.some((x) => x.tid === '780' && /desligou você/.test(x.t)));
+  assert.ok((await sala.pedirEntrada({ tid: 780, nome: 'Duda' })).pedido, 'removido pelo dono sempre pede de novo');
+  await assert.rejects(sala.ligarConvidado('tg-780', true, 'tiza'), /só o dono/);
+  await sala.ligarConvidado('tg-780', true, 'dono');
+  assert.equal(banco.porTelegram('780').id, 'tg-780', 'dono religa pelo painel');
+});
+
+test('convidado: convite com prazo vence; 0 nunca vence', async () => {
+  const { banco, sala } = montarComAvisos('pessoa', { convidado_expira_h: 1 });
+  await sala.aprovar((await sala.pedirEntrada({ tid: 781, nome: 'Eva' })).pedido.id, 'dono');
+  const real = Date.now;
+  try {
+    Date.now = () => real() + 2 * 3600e3;
+    assert.equal(await sala.receber({ de: 'tg-781', conversa: 'tg:781', texto: 'oi', via: 'telegram' }), null);
+    assert.equal(banco.porTelegram('781'), undefined);
+    sala.mudarConfig({ convidado_expira_h: 0 }, 'dono');
+    await sala.ligarConvidado('tg-781', true, 'dono');
+    Date.now = () => real() + 9999 * 3600e3;
+    assert.ok(await sala.receber({ de: 'tg-781', conversa: 'tg:781', texto: 'oi, sem ferramenta', via: 'telegram' }));
+  } finally { Date.now = real; }
+});
+
+test('config: campos novos da rodada e do convidado são conferidos', () => {
+  assert.deepEqual(conferirMudancas({ teto_rodada: 20, teto_convidado: 30, convidado_reaprovar: 'nao', convidado_expira_h: 0 }, {}).validas,
+    { teto_rodada: 20, teto_convidado: 30, convidado_reaprovar: 'nao', convidado_expira_h: 0 });
+  assert.match(conferirMudancas({ convidado_reaprovar: 'talvez' }, {}).erros[0], /sim, nao/);
+  assert.match(conferirMudancas({ teto_rodada: 0 }, {}).erros[0], /1 a 60/);
+});
+
+import { criarTelegram } from '../lib/telegram.mjs';
+
+test('telegram: /entrar sem id, /aceitar, /sair e /remover chegam certos (fetch falso, sem rede)', async () => {
+  const banco = abrirBanco(':memory:');
+  banco.participante({ id: 'dono', nome: 'Dono', tipo: 'pessoa', papel: 'dono', origem: 'painel', telegram_id: '100' });
+  const u = (id, chat, text, tipo = 'private', extra = {}) => ({ update_id: id, message: { text, chat: { id: chat, type: tipo }, from: { id: chat, first_name: 'Ana', username: 'ana', ...extra } } });
+  const lotes = [[
+    u(1, 555, '/entrar'), u(2, -9, '/entrar', 'group'), u(3, 556, 'oi'),
+    u(4, 100, '/aceitar 3'), u(5, 100, '/recusar 4'), u(6, 100, '/remover ana'), u(7, 100, '/sair'),
+  ]];
+  const enviados = [];
+  const real = globalThis.fetch;
+  let tg;
+  globalThis.fetch = async (url, op) => {
+    const corpo = JSON.parse(op.body);
+    if (url.endsWith('/getUpdates')) { const l = lotes.shift(); if (!l) tg.parar(); return { json: async () => ({ ok: true, result: l || [] }) }; }
+    enviados.push(corpo);
+    return { json: async () => ({ ok: true, result: {} }) };
+  };
+  const entradas = [], comandos = [];
+  try {
+    tg = criarTelegram({ token: 'x', banco, perfil: { telegram: {} }, log: () => {}, aoReceber: async () => {},
+      aoEntrada: async (x) => { entradas.push(x); return 'Pedido #3 enviado'; },
+      aoComando: async (c) => { comandos.push({ acao: c.acao, id: c.id, alvo: c.alvo, quem: c.quem.id }); } });
+    tg.iniciar();
+    for (let i = 0; i < 50 && lotes.length + 1 > 0 && comandos.length < 4; i++) await new Promise((r) => setTimeout(r, 5));
+  } finally { tg.parar(); globalThis.fetch = real; }
+  assert.deepEqual(entradas, [{ tid: 555, nome: 'Ana', usuario: 'ana' }]);
+  const para = (chat) => enviados.filter((e) => e.chat_id === chat).map((e) => e.text);
+  assert.deepEqual(para(555), ['Pedido #3 enviado']);
+  assert.match(para(-9)[0], /conversa privada/);
+  assert.match(para(556)[0], /mande \/entrar/);
+  assert.deepEqual(comandos, [
+    { acao: 'aprovar', id: 3, alvo: undefined, quem: 'dono' }, { acao: 'recusar', id: 4, alvo: undefined, quem: 'dono' },
+    { acao: 'remover', id: undefined, alvo: 'ana', quem: 'dono' }, { acao: 'sair', id: undefined, alvo: undefined, quem: 'dono' },
+  ]);
+});

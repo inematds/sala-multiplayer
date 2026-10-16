@@ -66,7 +66,9 @@ export async function iniciar(aoMudar) {
     }
   });
   on('participante', (d) => {
-    if (!S.estado.participantes.some((p) => p.id === d.id)) S.estado.participantes.push(d);
+    // Novo entra na lista; já existente (convidado ligado/desligado) é atualizado.
+    const i = S.estado.participantes.findIndex((p) => p.id === d.id);
+    if (i < 0) S.estado.participantes.push(d); else S.estado.participantes[i] = { ...S.estado.participantes[i], ...d };
     // Agente novo aprovado: busca de novo motor, nível e esforço.
     if (d.tipo === 'agente') fetch('/api/estado').then((r) => r.json()).then((e) => { S.estado.agentes = e.agentes; aoMudar('agentes', e.agentes); }).catch(() => {});
   });
