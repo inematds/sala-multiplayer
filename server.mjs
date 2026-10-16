@@ -60,7 +60,21 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
   tg = criarTelegram({
     token: process.env.SALA_TELEGRAM_TOKEN, banco, perfil,
     aoReceber: (m) => sala.receber(m),
-    async aoComando({ quem, acao, id, conversa, args }) {
+    // Alguém de fora mandou ping: o dono recebe o id e o comando pronto.
+    async aoPing(u) {
+      const d = banco.participantes().find((p) => p.id === sala.dono);
+      if (!d?.telegram_id) return;
+      const livres = (perfil.pessoas || []).filter((p) => !banco.participantes().find((x) => x.id === p.id)?.telegram_id).map((p) => p.id);
+      const nome = [u.first_name, u.last_name].filter(Boolean).join(' ') + (u.username ? ` @${u.username}` : '');
+      await tg.avisar(d.telegram_id, `${nome} mandou ping ao bot. id ${u.id}.` + (livres.length ? `\nPara colocar na sala: /entrar ${u.id} ${livres[0]}${livres.length > 1 ? `  (pessoas sem Telegram: ${livres.join(', ')})` : ''}` : '\nTodas as pessoas do perfil já têm Telegram.')).catch(() => {});
+    },
+    async aoComando({ quem, acao, id, conversa, args, tid, pessoa }) {
+      if (acao === 'entrar') {
+        if (quem.id !== sala.dono) return tg.enviar(conversa, 'Só o dono coloca pessoas na sala.');
+        try { const p = sala.ligarTelegram(pessoa, tid, quem.id); await tg.enviar(conversa, `Feito: ${p.nome} está na sala (id ${tid}).`); await tg.avisar(tid, `Você entrou na sala "${perfil.nome}" como ${p.nome}. É só escrever aqui.`).catch(() => {}); }
+        catch (e) { await tg.enviar(conversa, `Não coloquei: ${e.message}`); }
+        return;
+      }
       if (acao === 'config') {
         // Só o dono, reconhecido pelo id do Telegram. "/config" mostra; "/config campo valor" muda.
         if (quem.id !== sala.dono) return tg.enviar(conversa, 'Só o dono da sala mexe na configuração. Peça a mudança no chat: o agente monta a proposta e o dono aprova.');

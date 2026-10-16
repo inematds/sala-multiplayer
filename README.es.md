@@ -48,7 +48,8 @@ npm run atendimento   # área de atención      → http://127.0.0.1:4600
 2. Para que el bot lea mensajes en un grupo: en @BotFather, `/setprivacy` → elige el bot → **Disable**.
 3. Copia `.env.exemplo` a `.env` y completa `SALA_TELEGRAM_TOKEN` y tu id (`SALA_DONO_TELEGRAM_ID`; averígualo con @userinfobot).
 4. Cada persona del equipo envía `/start` al bot una vez (un bot de Telegram no puede iniciar la conversación; sin eso no puede avisar de las aprobaciones).
-5. Ejecuta `npm run pessoa` o `npm run atendimento`. El sello de Telegram en la parte superior del panel queda "ligado" (activo).
+5. Quien no sabe su id manda `ping` al bot: recibe el id de vuelta, y el dueño recibe un aviso con el comando listo (`/entrar <id> <persona>`) para meterla en la sala sin tocar el `.env`.
+6. Ejecuta `npm run pessoa` o `npm run atendimento`. El sello de Telegram en la parte superior del panel queda "ligado" (activo).
 
 Es **un solo bot**: los agentes responden por él, con su nombre al frente ("Claude: ..."). Es necesario porque un bot de Telegram no ve los mensajes de otro bot.
 

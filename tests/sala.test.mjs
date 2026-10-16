@@ -285,3 +285,17 @@ test('id do Telegram de quem é do perfil é atualizado a cada início', () => {
   assert.equal(banco.porTelegram('111').id, 'dono');
   if (antes === undefined) delete process.env.SALA_DONO_TELEGRAM_ID; else process.env.SALA_DONO_TELEGRAM_ID = antes;
 });
+
+test('dono liga pessoa do perfil ao Telegram com /entrar: vale na hora e no reinício', () => {
+  const banco = abrirBanco(':memory:');
+  const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-ent-'));
+  const base = { perfil: perfil('pessoa'), banco, motor: falso, raiz: RAIZ, dados, externo: async () => {} };
+  const sala = criarSala(base);
+  sala.ligarTelegram('tiza', '555', 'dono');
+  assert.equal(banco.porTelegram('555').id, 'tiza');
+  assert.throws(() => sala.ligarTelegram('fulano', '556', 'dono'), /não está no perfil/);
+  assert.throws(() => sala.ligarTelegram('tiza', 'abc', 'dono'), /inválido/);
+  const banco2 = abrirBanco(':memory:');
+  criarSala({ ...base, banco: banco2 });
+  assert.equal(banco2.porTelegram('555').id, 'tiza');
+});

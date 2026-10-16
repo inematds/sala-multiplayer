@@ -48,7 +48,8 @@ npm run atendimento   # support desk          → http://127.0.0.1:4600
 2. For the bot to read group messages: in @BotFather, `/setprivacy` → pick the bot → **Disable**.
 3. Copy `.env.exemplo` to `.env` and fill in `SALA_TELEGRAM_TOKEN` and your id (`SALA_DONO_TELEGRAM_ID`; find it with @userinfobot).
 4. Each team member sends `/start` to the bot once (a Telegram bot cannot start a conversation; without it, it cannot notify people about approvals).
-5. Run `npm run pessoa` or `npm run atendimento`. The Telegram badge at the top of the dashboard shows "on".
+5. Anyone who does not know their id sends `ping` to the bot: they get the id back, and the owner gets a notice with the ready command (`/entrar <id> <person>`) to add them to the room without touching `.env`.
+6. Run `npm run pessoa` or `npm run atendimento`. The Telegram badge at the top of the dashboard shows "on".
 
 It is **a single bot**: the agents reply through it, with their name in front ("Claude: ..."). This is needed because a Telegram bot cannot see messages from another bot.
 
