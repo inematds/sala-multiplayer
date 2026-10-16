@@ -8,36 +8,76 @@
 <link rel="stylesheet" href="/estilo.css">
 </head>
 <body>
-<p style="margin:10px 16px 6px;color:var(--mut);font-size:.9rem">Tudo o que passa pela sala, na ordem em que chega: Telegram, painel, agentes, ferramentas e avisos.</p>
+<div class="fluxo-topo">
+  <div class="modo" role="group" aria-label="modo de ver o fluxo">
+    <button class="tab" data-modo="texto">Texto</button>
+    <button class="tab" data-modo="visual">Visual</button>
+  </div>
+  <p id="explica"></p>
+  <button class="btn" id="pausa">Pausar</button>
+</div>
 <div class="fluxo-cab" id="cab">
   <button class="tab on" data-t="pessoa">Pessoas</button>
   <button class="tab on" data-t="agente">Agentes</button>
   <button class="tab on" data-t="ferramenta">Ferramentas</button>
   <button class="tab on" data-t="sistema">Avisos</button>
-  <button class="btn" id="pausa" style="margin-left:auto">Pausar</button>
 </div>
+<div class="fluxo-filtro" id="filtro" hidden></div>
 <main class="fluxo" id="fluxo"></main>
+<main class="visual" id="visual" hidden></main>
 <script type="module">
 import { S, iniciar, nav, icone, esc, hora, part, classe, nomeConversa } from '/comum.js';
+import { rodadas, resolucao } from '/rodadas.js';
 const ligados = new Set(['pessoa', 'agente', 'ferramenta', 'sistema']);
+const $ = (id) => document.getElementById(id);
+const url = new URLSearchParams(location.search);
 let pausado = false;
-const box = document.getElementById('fluxo');
+let modo = url.get('v') || (() => { try { return localStorage.getItem('sala-fluxo-modo'); } catch { return null; } })() || 'texto';
+// Filtro vindo de um tópico ou de um link: só estas rodadas.
+const soRodadas = url.get('rodadas') ? new Set(url.get('rodadas').split(',').map(String)) : null;
+const abertas = new Set(url.get('rodada') ? [url.get('rodada')] : []);
+let primeira = true;
+const box = $('fluxo'), vis = $('visual');
 
-await iniciar((tipo, d) => { if (tipo === 'evento' && !pausado) add(d, true); });
+await iniciar((tipo, d) => {
+  if (pausado) return;
+  if (tipo === 'evento') { if (modo === 'texto') add(d); else agendar(); }
+  if (tipo === 'aprovacao' && modo === 'visual') agendar();
+});
 nav('fluxo');
 document.querySelectorAll('#cab .tab').forEach((b) => b.onclick = () => {
   b.classList.toggle('on');
   b.classList.contains('on') ? ligados.add(b.dataset.t) : ligados.delete(b.dataset.t);
   tudo();
 });
-document.getElementById('pausa').onclick = (e) => { pausado = !pausado; e.target.textContent = pausado ? 'Continuar' : 'Pausar'; if (!pausado) tudo(); };
+$('pausa').onclick = (e) => { pausado = !pausado; e.target.textContent = pausado ? 'Continuar' : 'Pausar'; if (!pausado) desenhar(); };
+document.querySelectorAll('.modo .tab').forEach((b) => b.onclick = () => trocar(b.dataset.modo));
+if (soRodadas) { $('filtro').hidden = false; $('filtro').innerHTML = `Mostrando ${soRodadas.size} rodada(s) de um tópico <a href="/fluxo">ver tudo</a>`; }
 
+function trocar(m) {
+  modo = m === 'visual' ? 'visual' : 'texto';
+  try { localStorage.setItem('sala-fluxo-modo', modo); } catch { /* sem storage */ }
+  const u = new URL(location.href); u.searchParams.set('v', modo); history.replaceState(null, '', u);
+  document.querySelectorAll('.modo .tab').forEach((b) => b.classList.toggle('on', b.dataset.modo === modo));
+  $('cab').hidden = modo === 'visual';
+  box.hidden = modo === 'visual'; vis.hidden = modo !== 'visual';
+  $('explica').textContent = modo === 'visual'
+    ? 'Uma rodada por mensagem de pessoa: quem chamou quem, na ordem, e como terminou. Clique numa seta para ler a mensagem inteira.'
+    : 'Tudo o que passa pela sala, na ordem em que chega: Telegram, painel, agentes, ferramentas e avisos.';
+  desenhar();
+}
+function desenhar() { modo === 'visual' ? visual() : tudo(); }
+let timer = null;
+function agendar() { clearTimeout(timer); timer = setTimeout(visual, 250); }
+
+// ---------- Texto (como antes) ----------
 function linha(e) {
   const de = part(e.de), c = classe(de);
   if (!ligados.has(de.tipo === 'pessoa' ? 'pessoa' : de.tipo)) return '';
-  return `<div class="fl"><span class="h mono">${hora(e.hora)}</span>
+  if (soRodadas && !soRodadas.has(String(e.rodada))) return '';
+  return `<div class="fl ${e.meta?.eco ? 'eco' : ''}"><span class="h mono">${hora(e.hora)}</span>
     <span class="q"><span class="t-${c}">${icone(c)}</span><b>${esc(de.nome)}</b>&nbsp;→ ${esc(part(e.para).nome)}</span>
-    <span class="x">${e.conversa !== 'painel' ? `<span class="tg">${esc(nomeConversa(e.conversa))}</span> ` : ''}${e.tipo !== 'mensagem' && e.tipo !== 'resposta' ? `<span class="tg">${e.tipo}</span> ` : ''}${esc(e.texto)}</span></div>`;
+    <span class="x">${e.conversa !== 'painel' ? `<span class="tg">${esc(nomeConversa(e.conversa))}</span> ` : ''}${e.tipo !== 'mensagem' && e.tipo !== 'resposta' ? `<span class="tg">${e.tipo}</span> ` : ''}${e.meta?.eco ? '<span class="tg">só confirma</span> ' : ''}${esc(e.texto)}</span></div>`;
 }
 function add(e) {
   const fim = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
@@ -49,7 +89,95 @@ function tudo() {
   box.innerHTML = S.estado.eventos.map(linha).join('') || '<div class="fl"><span></span><span class="x">Nada ainda.</span></div>';
   box.scrollTop = box.scrollHeight;
 }
-tudo();
+
+// ---------- Visual: diagrama de sequência por rodada + faixa de resolução ----------
+const MARCA = {
+  proposta: (e) => `proposta #${e.meta?.aprovacao ?? ''}`, rascunho: (e) => `rascunho #${e.meta?.aprovacao ?? ''}`,
+  ferramenta: () => 'usa ferramenta', resultado: () => 'resultado', pedido: (e) => `pedido #${e.meta?.aprovacao ?? ''}`,
+};
+function marca(e) {
+  if (e.tipo === 'sistema') return /^Teto/.test(e.texto) ? ['teto', 'ruim'] : /falhou/.test(e.texto) ? ['falhou', 'ruim'] : ['aviso', ''];
+  if (e.meta?.eco) return ['só confirma', 'apagado'];
+  if (MARCA[e.tipo]) return [MARCA[e.tipo](e), e.tipo === 'proposta' || e.tipo === 'rascunho' ? 'destaque' : ''];
+  return null;
+}
+const ORDEM = { pessoa: 0, agente: 1, ferramenta: 2, sistema: 3 };
+function colunas(evs) {
+  const ids = [];
+  for (const e of evs) for (const id of [e.de, e.para]) if (id && id !== 'sala' && !ids.includes(id)) ids.push(id);
+  return ids.sort((a, b) => (ORDEM[part(a).tipo] ?? 3) - (ORDEM[part(b).tipo] ?? 3) || ids.indexOf(a) - ids.indexOf(b));
+}
+function seta(e, cols, ramo, nRamos) {
+  const a = cols.indexOf(e.de), bRaw = cols.indexOf(e.para), b = bRaw < 0 ? a : bRaw;
+  const ini = Math.min(a, b), fim = Math.max(a, b), k = fim - ini + 1;
+  const m = marca(e), dir = b > a ? 'dir' : b < a ? 'esq' : 'auto';
+  const c = classe(part(e.de));
+  const curto = e.texto.replace(/\s+/g, ' ').slice(0, 90);
+  return `<div class="sq-linha ${e.meta?.eco ? 'eco' : ''}" style="--n:${cols.length}">
+    ${nRamos > 1 && ramo != null ? `<span class="ramo" title="ramo ${ramo + 1} de ${nRamos}">${ramo + 1}</span>` : ''}
+    <button class="sq-seta ${dir} t-${c}" style="grid-column:${ini + 1} / ${fim + 2};--k:${k}" aria-expanded="false" title="${esc(part(e.de).nome)} → ${esc(part(e.para).nome)}">
+      <span class="rot">${m ? `<span class="tg ${m[1]}">${esc(m[0])}</span>` : ''}<span class="txt">${esc(curto)}</span></span>
+      <span class="traco" aria-hidden="true"></span>
+    </button>
+    <div class="sq-cheio" hidden><span class="mono">${hora(e.hora)}</span> · <b>${esc(part(e.de).nome)}</b> → ${esc(part(e.para).nome)}${e.meta?.ms ? ` · ${Math.round(e.meta.ms / 100) / 10}s` : ''}<div class="x">${esc(e.texto)}</div></div>
+  </div>`;
+}
+function bloco(r) {
+  const evs = r.eventos.filter((e) => e.tipo !== 'aprovacao');
+  const cols = colunas(evs);
+  const res = resolucao(r, S.estado);
+  const aberta = abertas.has(r.chave);
+  const vidas = cols.map((_, i) => `linear-gradient(var(--line),var(--line)) ${((i + 0.5) / cols.length) * 100}% 0/1px 100% no-repeat`).join(',');
+  const lista = (itens, vazio) => itens.length ? `<ul>${itens.map((i) => `<li>${i}</li>`).join('')}</ul>` : `<p class="mut">${vazio}</p>`;
+  return `<section class="rodada ${aberta ? 'aberta' : ''}" data-chave="${r.chave}">
+    <button class="rd-cab" aria-expanded="${aberta}">
+      <span class="mono">${hora(r.inicio.hora)}</span>
+      <span class="t-${classe(part(r.inicio.de))}">${icone(classe(part(r.inicio.de)))}</span>
+      <b>${esc(part(r.inicio.de).nome)}</b>
+      <span class="pedido">${esc(r.inicio.texto.replace(/\s+/g, ' ').slice(0, 120))}</span>
+      <span class="chips">
+        <span class="tg">${res.respostas} resposta${res.respostas === 1 ? '' : 's'}</span>
+        ${res.ecos ? `<span class="tg apagado">${res.ecos} só confirma</span>` : ''}
+        ${res.tetos.length ? `<span class="tg ruim">teto</span>` : ''}
+        ${res.pendentes.length ? `<span class="tg destaque">${res.pendentes.length} pendente${res.pendentes.length === 1 ? '' : 's'}</span>` : ''}
+        ${r.aprox ? '<span class="tg" title="mensagens de antes da v0.5, agrupadas pela hora">aproximado</span>' : ''}
+      </span>
+    </button>
+    ${aberta ? `<div class="rd-corpo">
+      <div class="sq">
+        <div class="sq-cols" style="--n:${cols.length}">${cols.map((id) => { const p = part(id), c = classe(p); return `<span class="t-${c}" title="${esc(p.nome)}">${icone(c)}<span>${esc(p.nome)}</span></span>`; }).join('')}</div>
+        <div class="sq-corpo" style="background:${vidas}">${evs.map((e) => seta(e, cols, r.ramo.get(e.id), r.nRamos)).join('')}</div>
+      </div>
+      <aside class="res">
+        <h4>Pedido</h4><p>${esc(r.inicio.texto)}</p>
+        <h4>Propostas</h4>${lista(res.propostas.map((p) => `#${p.id} ${esc(p.texto)} <span class="tg ${p.estado === 'pendente' ? 'destaque' : p.estado === 'recusada' ? 'ruim' : 'ok'}">${p.estado}${p.quem ? ` · ${esc(part(p.quem).nome)}` : ''}</span>`), 'Nenhuma.')}
+        <h4>Decidido</h4>${lista(res.decidido.map(esc), 'Nada decidido pelo fluxo de aprovação.')}
+        <h4>Pendente</h4>${lista(res.pendentes.map(esc), 'Nada esperando.')}
+        ${res.tetos.length || res.falhas.length ? `<h4>Travas</h4>${lista([...res.tetos, ...res.falhas].map(esc), '')}` : ''}
+        <h4>Custo</h4><p>${res.respostas} resposta${res.respostas === 1 ? '' : 's'} de agentes${res.ecos ? ` (${res.ecos} só confirmando)` : ''} · ${String(Math.round(res.ms / 100) / 10).replace('.', ',')} s · ${res.agentes.map((id) => esc(part(id).nome)).join(', ') || 'nenhum agente'}</p>
+      </aside>
+    </div>` : ''}
+  </section>`;
+}
+function visual() {
+  let lista = rodadas(S.estado.eventos);
+  if (soRodadas) lista = lista.filter((r) => soRodadas.has(String(r.chave)));
+  lista.reverse();
+  if (primeira && lista[0] && !abertas.size) abertas.add(lista[0].chave);
+  primeira = false;
+  vis.innerHTML = (lista.map(bloco).join('') || '<p class="mut" style="padding:14px">Nenhuma rodada ainda. Escreva na Sala ou mande algo para o bot.</p>')
+    + `<p class="mut rodape">Mostra as últimas ${S.estado.eventos.length} mensagens da sala.</p>`;
+  vis.querySelectorAll('.rd-cab').forEach((b) => b.onclick = () => {
+    const k = b.closest('.rodada').dataset.chave;
+    abertas.has(k) ? abertas.delete(k) : abertas.add(k);
+    visual();
+  });
+  vis.querySelectorAll('.sq-seta').forEach((b) => b.onclick = () => {
+    const cheio = b.parentElement.querySelector('.sq-cheio');
+    cheio.hidden = !cheio.hidden; b.setAttribute('aria-expanded', String(!cheio.hidden));
+  });
+}
+trocar(modo);
 </script>
 </body>
 </html>

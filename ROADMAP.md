@@ -21,7 +21,7 @@
 - Eventos com `rodada` e `pai`.
 - Convidado pelo Telegram sem id: `/entrar`, `/aceitar N`, `/recusar N`, `/remover nome`, `/sair`; teto por convidado, reaprovação e prazo do convite na tela Config.
 
-## v0.6 — Fluxo Texto | Visual
+## v0.6 — Fluxo Texto | Visual — feito (16/10/2026)
 - Botão no Fluxo: diagrama de sequência por rodada (colunas por participante, setas, marcas de proposta, aprovação, pendente, teto e eco) e faixa de resolução (pedido, propostas, decidido, pendente, custo).
 
 ## v0.7 — Tópicos

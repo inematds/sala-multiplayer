@@ -16,13 +16,14 @@ Tem dois modos prontos: **pessoa** (você e seus agentes) e **atendimento** (um 
 
 Guia completo (landing + passo a passo): **https://inematds.github.io/sala-multiplayer/guia/**
 
-## As três telas
+## As telas
 
 | Tela | O que mostra |
 |---|---|
 | **Sala** (`/`) | No topo: mensagens da última hora, agentes trabalhando, aprovações pendentes e respostas do dia. À esquerda: participantes (Todos, Pessoas, Agentes, Ferramentas); clique para filtrar. À direita: o chat, com seletor de conversa. |
 | **Grafo** (`/grafo`) | Quem conversa com quem. A linha engrossa com o volume e uma bolinha corre por ela a cada mensagem. |
-| **Fluxo** (`/fluxo`) | Tudo o que entra e sai, rolando na ordem em que acontece. |
+| **Fluxo** (`/fluxo`) | Botão **Texto \| Visual**. Texto: tudo o que entra e sai, na ordem em que acontece. Visual: uma rodada por mensagem de pessoa, em diagrama de sequência (uma coluna por participante, uma seta por mensagem, marcas de proposta, teto, falha e "só confirma"), com a faixa de resolução ao lado: pedido, propostas, decidido, pendente, travas e custo. |
+| **Config** (`/config`) | Limites da sala, de cada agente e dos convidados; ligar e desligar convidado. Só o dono, com a senha. |
 
 ![Sala](docs/sala-1280.png)
 ![Grafo](docs/grafo-1280.png)
@@ -32,7 +33,7 @@ Guia completo (landing + passo a passo): **https://inematds.github.io/sala-multi
 ```bash
 git clone https://github.com/inematds/sala-multiplayer && cd sala-multiplayer
 npm run demo          # demonstração com agentes falsos: http://127.0.0.1:4601
-npm test              # 39 testes, sem chamar agentes nem Telegram
+npm test              # 41 testes, sem chamar agentes nem Telegram
 ```
 
 Com agentes de verdade:

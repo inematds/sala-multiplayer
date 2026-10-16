@@ -516,3 +516,42 @@ test('telegram: /entrar sem id, /aceitar, /sair e /remover chegam certos (fetch 
     { acao: 'remover', id: undefined, alvo: 'ana', quem: 'dono' }, { acao: 'sair', id: undefined, alvo: undefined, quem: 'dono' },
   ]);
 });
+
+// ---------- v0.6: rodadas e faixa de resolução (public/rodadas.js, mesmo código do Fluxo visual) ----------
+import { rodadas, resolucao } from '../public/rodadas.js';
+
+test('rodadas: uma por mensagem, ramos pelo pai, proposta resolvida pela aprovação', async () => {
+  const { banco, sala } = montarComAvisos('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude e @codex, so-confirma codex' });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente topicos, sem ferramenta' });
+  let rs = rodadas(banco.eventos());
+  assert.equal(rs.length, 2);
+  assert.equal(rs[0].nRamos, 2, 'claude e codex acionados direto = dois ramos');
+  const estado = () => ({ participantes: banco.participantes(), pendentes: banco.pendentes() });
+  let res = resolucao(rs[0], estado());
+  assert.deepEqual([res.respostas, res.ecos, res.agentes.sort().join()], [2, 2, 'claude,codex']);
+  res = resolucao(rs[1], estado());
+  assert.equal(res.propostas[0].estado, 'pendente');
+  assert.match(res.pendentes[0], /^#1 esperando decisão/);
+  await sala.aprovar(1, 'dono');
+  rs = rodadas(banco.eventos());
+  res = resolucao(rs[1], estado());
+  assert.equal(res.propostas[0].estado, 'aprovada', 'a aprovação (fora da rodada) volta para a rodada da proposta');
+  assert.equal(res.propostas[0].quem, 'dono');
+  assert.match(res.decidido[0], /^#1 aprovada às/);
+});
+
+test('rodadas: eventos antigos sem rodada são agrupados pela hora e marcados como aproximados', () => {
+  const ev = [
+    { id: 1, tipo: 'mensagem', de: 'dono', para: 'claude', texto: 'a', hora: '2026-10-16T04:00:00Z' },
+    { id: 2, tipo: 'resposta', de: 'claude', para: 'dono', texto: 'b', hora: '2026-10-16T04:00:05Z', meta: { ms: 5000 } },
+    { id: 3, tipo: 'sistema', de: 'sistema', para: 'codex', texto: 'Teto de 10 turnos entre agentes atingido; Codex não foi chamado.', hora: '2026-10-16T04:00:06Z' },
+    { id: 4, tipo: 'mensagem', de: 'dono', para: 'claude', texto: 'c', hora: '2026-10-16T04:01:00Z', rodada: 4 },
+    { id: 5, tipo: 'pedido', de: 'sistema', para: 'dono', texto: 'Ana pede', hora: '2026-10-16T04:02:00Z', meta: { aprovacao: 9 } },
+  ];
+  const rs = rodadas(ev);
+  assert.deepEqual(rs.map((r) => [r.chave, r.aprox, r.eventos.length]), [['a1', true, 3], ['4', false, 1]]);
+  const res = resolucao(rs[0], { participantes: [{ id: 'claude', tipo: 'agente' }], pendentes: [] });
+  assert.equal(res.tetos.length, 1);
+  assert.equal(res.ms, 5000);
+});
