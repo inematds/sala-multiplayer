@@ -131,3 +131,8 @@ select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border
   .comp{grid-template-columns:1fr auto}
   .comp select{grid-column:1/-1}
 }
+.ap .prop{display:grid;gap:3px;font-size:.9rem;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ap .prop b{font-family:Sora,sans-serif}
+.ap .prop .r{color:var(--mut);display:inline-block;min-width:88px}
+.m .tempo{font-size:.72rem;color:var(--mut);margin-top:2px}
+.m.proposta{border-left:3px solid var(--amb,#FACC15)}

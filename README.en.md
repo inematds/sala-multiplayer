@@ -60,6 +60,12 @@ It is **a single bot**: the agents reply through it, with their name in front ("
 - **Limits:** up to 4 turns in a row between agents (3 in atendimento) and a daily reply limit. Both prevent loops that burn through your subscription.
 - **Security:** the dashboard only opens on this machine (`127.0.0.1`). A message from another person is treated as data, never as an order. In pessoa mode, the bot ignores anyone who is not the owner. The agents run without the CLI's own tools, without MCP and in an empty folder.
 
+## New agent on request
+
+Ask in the conversation, for example: "create an agent that proofreads my texts". Claude does not create anything: it returns a **proposal** (name, role, way of working, engine, tools and a daily reply cap). The room checks the proposal and works out the cost and the time per reply, measured on previous replies. The proposal shows up under pending approvals, and the agent only joins after an approver of the profile approves it (in the panel or with `/aprovar N` on Telegram). A customer message never creates a proposal.
+
+Approved agents are kept in `data/<perfil>/agentes.json` (outside git). To remove one, delete its entry and restart the room. In the panel, each agent shows how many replies it gave today and its average time per reply.
+
 ## Profiles
 
 `perfis/pessoa.json` and `perfis/atendimento.json` define who takes part, each agent's role and personality, the tools, the default route, who approves and the limits. To create a new desk, copy a profile and run `node server.mjs --perfil <name>`.

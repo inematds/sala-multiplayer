@@ -17,6 +17,7 @@
   ],
   "rota_padrao": { "cliente": "claude" },
   "aprovar_para": ["cliente"],
+  "propor_agentes": ["claude"],
   "aprovadores": ["supervisor", "atendente"],
   "teto_turnos": 3,
   "teto_diario": 300,

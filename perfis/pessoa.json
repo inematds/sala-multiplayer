@@ -15,6 +15,7 @@
   ],
   "rota_padrao": { "dono": "claude" },
   "aprovar_para": [],
+  "propor_agentes": ["claude"],
   "aprovadores": ["dono"],
   "teto_turnos": 4,
   "teto_diario": 150,

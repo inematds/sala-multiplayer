@@ -60,6 +60,12 @@ npm run atendimento   # setor de atendimento  → http://127.0.0.1:4600
 - **Tetos:** até 4 turnos seguidos entre agentes (3 no atendimento) e um limite de respostas por dia. Os dois evitam laço gastando a assinatura.
 - **Segurança:** o painel só abre nesta máquina (`127.0.0.1`). Mensagem de outra pessoa é tratada como dado, nunca como ordem. No modo pessoa, o bot ignora quem não é o dono. Os agentes rodam sem as ferramentas próprias do CLI, sem MCP e numa pasta vazia.
 
+## Agente novo por pedido
+
+Peça na conversa, por exemplo: "cria um agente que revise meus textos". O Claude não cria nada: ele devolve uma **proposta** (nome, papel, jeito de trabalhar, motor, ferramentas e teto de respostas por dia). A sala confere a proposta e calcula o custo e o tempo por resposta, medidos nas respostas anteriores. A proposta aparece em "Aprovações pendentes", e o agente só entra depois que um aprovador do perfil aprovar (no painel ou com `/aprovar N` no Telegram). Mensagem de cliente nunca gera proposta.
+
+Os agentes aprovados ficam em `data/<perfil>/agentes.json` (fora do git). Para tirar um, apague a entrada e reinicie a sala. No painel, cada agente mostra quantas respostas deu hoje e o tempo médio por resposta.
+
 ## Perfis
 
 `perfis/pessoa.json` e `perfis/atendimento.json` definem quem participa, o papel e a personalidade de cada agente, as ferramentas, a rota padrão, quem aprova e os tetos. Para criar um setor novo, copie um perfil e rode `node server.mjs --perfil <nome>`.

@@ -52,7 +52,6 @@ const equipe = S.estado.perfil.equipe;
 if (!equipe.some((p) => p.id === eu)) eu = equipe[0].id;
 $('eu').innerHTML = equipe.map((p) => `<option value="${p.id}" ${p.id === eu ? 'selected' : ''}>Você é: ${esc(p.nome)}</option>`).join('');
 $('eu').onchange = (e) => { eu = e.target.value; try { localStorage.setItem('sala-eu', eu); } catch {} render(); };
-$('dica').textContent = `Agentes: ${S.estado.participantes.filter((p) => p.tipo === 'agente').map((p) => '@' + p.id).join(', ')} · teto de ${S.estado.perfil.teto_turnos} turnos entre agentes`;
 document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { aba = b.dataset.t; document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b)); render(); });
 $('conversa').onchange = (e) => { conversa = e.target.value; render(); };
 $('k-aprov-box').onclick = () => $('aprov').classList.toggle('aberta');
@@ -66,6 +65,23 @@ $('comp').onsubmit = async (e) => {
 };
 
 function contagem(id) { return S.estado.eventos.filter((e) => e.de === id || e.para === id).length; }
+// Prestação de contas do agente: respostas hoje e tempo médio por resposta.
+function contas(id) {
+  const c = S.estado.contas[id];
+  return c ? ` · ${c.hoje} hoje · ${String(c.mediaS).replace('.', ',')}s/resposta` : '';
+}
+function cartaoAgente(a) {
+  const g = a.dados.agente, est = a.dados.estimativa;
+  const linha = (r, v) => v ? `<div><span class="r">${r}</span> ${esc(v)}</div>` : '';
+  return `<div class="ap" data-id="${a.id}">
+    <div class="q">#${a.id} · ${esc(part(a.de).nome)} propõe um agente novo · pedido de ${esc(part(a.para).nome)} · ${hora(a.hora)}</div>
+    <div class="prop"><b>@${esc(g.id)} · ${esc(g.nome)}</b>
+      ${linha('Motor', g.motor === 'codex' ? 'Codex' : 'Claude Code')}${linha('Papel', g.papel)}${linha('Jeito', g.persona)}
+      ${linha('Ferramentas', est.ferramentas)}${linha('Teto', `${g.teto_diario} respostas por dia`)}
+      ${linha('Tempo', est.tempo)}${linha('Custo', est.custo)}${linha('Por quê', g.justificativa)}</div>
+    <div class="acoes"><button class="btn pri" data-a="aprovar">Aprovar e criar agente</button><button class="btn" data-a="recusar">Recusar</button></div>
+  </div>`;
+}
 
 function render() {
   const e = S.estado;
@@ -77,11 +93,12 @@ function render() {
   $('k-aprov-box').classList.toggle('tem', e.pendentes.length > 0);
   $('k-hoje').textContent = e.stats.chamadasHoje;
   $('k-teto').textContent = `teto diário: ${e.perfil.teto_diario}`;
+  $('dica').textContent = `Agentes: ${e.participantes.filter((p) => p.tipo === 'agente').map((p) => '@' + p.id).join(', ')} · teto de ${e.perfil.teto_turnos} turnos entre agentes · peça "cria um agente que..." para propor um novo`;
   // aprovações (não redesenha um rascunho que está sendo editado)
   const lista = $('aprov-lista');
   const emEdicao = lista.contains(document.activeElement);
   if (!emEdicao) {
-    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => `
+    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => a.tipo === 'agente' ? cartaoAgente(a) : `
       <div class="ap" data-id="${a.id}">
         <div class="q">#${a.id} · ${esc(part(a.de).nome)} → ${esc(part(a.para).nome)} · ${esc(nomeConversa(a.conversa))} · ${hora(a.hora)}</div>
         <textarea aria-label="texto da resposta">${esc(a.texto)}</textarea>
@@ -90,7 +107,7 @@ function render() {
     lista.querySelectorAll('button[data-a]').forEach((b) => b.onclick = async () => {
       const box = b.closest('.ap');
       b.disabled = true;
-      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea').value });
+      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea')?.value });
       if (r.erro) { b.disabled = false; alertaInline(box, r.erro); }
     });
   }
@@ -100,7 +117,7 @@ function render() {
     const c = classe(p);
     return `<div class="pp ${sel === p.id ? 'on' : ''}" data-id="${p.id}" role="button" tabindex="0">
       <span class="t-${c}" title="${ROTULO[c]}">${icone(c)}</span>
-      <div><div class="nm">${esc(p.nome)}</div><div class="pa">${ROTULO[c]}${p.papel ? ' · ' + esc(p.papel) : ''}${p.origem === 'telegram' ? ' · Telegram' : ''}</div></div>
+      <div><div class="nm">${esc(p.nome)}</div><div class="pa">${ROTULO[c]}${p.origem === 'proposta' ? ' novo' : ''}${p.tipo === 'agente' ? contas(p.id) : ''}${p.papel ? ' · ' + esc(p.papel) : ''}${p.origem === 'telegram' ? ' · Telegram' : ''}</div></div>
       ${e.ativos.includes(p.id) ? '<span class="vivo" title="trabalhando"></span>' : ''}
       <span class="n">${contagem(p.id)}</span></div>`;
   }).join('') || '<div class="pa" style="padding:8px">Ninguém aqui ainda.</div>';
@@ -116,11 +133,11 @@ function render() {
   const evs = e.eventos.filter((x) => (conversa === 'todas' || x.conversa === conversa) && (!sel || x.de === sel || x.para === sel)).slice(-250);
   box.innerHTML = evs.map((x) => {
     const de = part(x.de), para = part(x.para), c = classe(de);
-    const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso' }[x.tipo];
+    const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, proposta: `proposta de agente · aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso' }[x.tipo];
     return `<div class="m ${x.tipo} ${x.de === eu ? 'meu' : ''}">
       <div class="c"><span class="t-${c}">${icone(c)}</span><b>${esc(de.nome)}</b>${x.para && x.para !== 'sala' ? ` → ${esc(para.nome)}` : ''} · ${hora(x.hora)}
       ${selo ? `<span class="tg">${selo}</span>` : ''}${conversa === 'todas' && x.conversa !== 'painel' ? `<span class="tg">${esc(nomeConversa(x.conversa))}</span>` : ''}</div>
-      <div class="x">${esc(x.texto)}</div></div>`;
+      <div class="x">${esc(x.texto)}</div>${x.meta?.ms && x.tipo !== 'rascunho' ? `<div class="tempo">${Math.round(x.meta.ms / 100) / 10}s</div>` : ''}</div>`;
   }).join('') || '<div class="pa">Sem mensagens ainda. Escreva abaixo ou mande algo para o bot no Telegram.</div>';
   if (noFim) box.scrollTop = box.scrollHeight;
 }

@@ -57,7 +57,13 @@ export async function iniciar(aoMudar) {
   S.estado = await (await fetch('/api/estado')).json();
   const es = new EventSource('/api/stream');
   const on = (tipo, f) => es.addEventListener(tipo, (m) => { const d = JSON.parse(m.data); f(d); aoMudar(tipo, d); });
-  on('evento', (d) => { S.estado.eventos.push(d); if (S.estado.eventos.length > 1500) S.estado.eventos.shift(); });
+  on('evento', (d) => {
+    S.estado.eventos.push(d); if (S.estado.eventos.length > 1500) S.estado.eventos.shift();
+    if (d.tipo === 'resposta' && d.meta?.ms) {
+      const c = (S.estado.contas[d.de] ||= { total: 0, hoje: 0, ms: 0 });
+      c.total++; c.hoje++; c.ms += d.meta.ms; c.mediaS = Math.round(c.ms / c.total / 100) / 10;
+    }
+  });
   on('participante', (d) => { if (!S.estado.participantes.some((p) => p.id === d.id)) S.estado.participantes.push(d); });
   on('aprovacao', (d) => {
     S.estado.pendentes = S.estado.pendentes.filter((p) => p.id !== d.id);

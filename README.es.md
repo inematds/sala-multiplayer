@@ -60,6 +60,12 @@ Es **un solo bot**: los agentes responden por él, con su nombre al frente ("Cla
 - **Topes:** hasta 4 turnos seguidos entre agentes (3 en atendimento) y un límite de respuestas por día. Ambos evitan bucles que gasten la suscripción.
 - **Seguridad:** el panel solo abre en esta máquina (`127.0.0.1`). El mensaje de otra persona se trata como dato, nunca como orden. En el modo pessoa, el bot ignora a quien no es el dueño. Los agentes corren sin las herramientas propias del CLI, sin MCP y en una carpeta vacía.
 
+## Agente nuevo a pedido
+
+Pídelo en la conversación, por ejemplo: "crea un agente que revise mis textos". Claude no crea nada: devuelve una **propuesta** (nombre, rol, forma de trabajar, motor, herramientas y tope de respuestas por día). La sala revisa la propuesta y calcula el costo y el tiempo por respuesta, medidos en las respuestas anteriores. La propuesta aparece en las aprobaciones pendientes, y el agente solo entra después de que un aprobador del perfil la apruebe (en el panel o con `/aprovar N` en Telegram). Un mensaje de cliente nunca genera una propuesta.
+
+Los agentes aprobados quedan en `data/<perfil>/agentes.json` (fuera de git). Para quitar uno, borra su entrada y reinicia la sala. En el panel, cada agente muestra cuántas respuestas dio hoy y su tiempo promedio por respuesta.
+
 ## Perfiles
 
 `perfis/pessoa.json` y `perfis/atendimento.json` definen quién participa, el rol y la personalidad de cada agente, las herramientas, la ruta por defecto, quién aprueba y los topes. Para crear un área nueva, copia un perfil y ejecuta `node server.mjs --perfil <nombre>`.

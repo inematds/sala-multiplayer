@@ -44,9 +44,10 @@ const externo = async (conversa, texto) => {
 };
 externo.avisarAprovadores = async (a, agente) => {
   if (!tg) return;
+  const oque = a.tipo === 'agente' ? `${agente.nome} propõe um agente novo` : `${agente.nome} quer responder`;
   for (const p of banco.participantes()) {
     if (p.tipo === 'pessoa' && p.telegram_id && (perfil.aprovadores || []).includes(p.papel)) {
-      await tg.avisar(p.telegram_id, `Aprovação #${a.id} — ${agente.nome} quer responder:\n\n${a.texto}\n\n/aprovar ${a.id}   ou   /recusar ${a.id}`).catch(() => {});
+      await tg.avisar(p.telegram_id, `Aprovação #${a.id} — ${oque}:\n\n${a.texto}\n\n/aprovar ${a.id}   ou   /recusar ${a.id}`).catch(() => {});
     }
   }
 };
@@ -60,7 +61,8 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
     async aoComando({ quem, acao, id, conversa }) {
       if (!(perfil.aprovadores || []).includes(quem.papel)) return;
       const r = acao === 'aprovar' ? await sala.aprovar(id, quem.id) : sala.recusar(id, quem.id);
-      await tg.enviar(conversa, r ? `#${id} ${acao === 'aprovar' ? 'aprovada e enviada' : 'recusada'}.` : `#${id} não está pendente.`);
+      const feito = acao === 'recusar' ? 'recusada' : r?.tipo === 'agente' ? `aprovada: agente @${r.dados.agente.id} criado` : 'aprovada e enviada';
+      await tg.enviar(conversa, r ? `#${id} ${feito}.` : `#${id} não está pendente.`);
     },
   });
   tg.iniciar();
@@ -84,7 +86,8 @@ function estado() {
     perfil: { id: perfil.id, nome: perfil.nome, descricao: perfil.descricao, equipe: perfil.pessoas, teto_diario: perfil.teto_diario ?? 200, teto_turnos: perfil.teto_turnos ?? 4 },
     modo: usarFalso ? 'falso' : 'real', telegram: Boolean(tg),
     participantes: banco.participantes(), eventos: banco.eventos(400), pendentes: banco.pendentes(),
-    stats: banco.stats(), ativos: [...sala.ativos],
+    stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
+    agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
   };
 }
 
@@ -146,6 +149,8 @@ async function demo() {
     await sala.receber({ de: 'atendente', conversa: 'painel', texto: '@codex confere a resposta do prazo para a Maria, sem ferramenta' }); await espera(900);
     const p = banco.pendentes()[0];
     if (p) await sala.aprovar(p.id, 'supervisor');
+    await espera(900);
+    await sala.receber({ de: 'supervisor', conversa: 'painel', texto: '@claude cria agente cobranca para lembrar clientes de boletos, sem ferramenta' });
   } else {
     await sala.receber({ de: eu, conversa: 'painel', texto: 'guarda: ligar para o contador na sexta' }); await espera(900);
     await sala.receber({ de: eu, conversa: 'painel', texto: '@codex como listo arquivos maiores que 1 GB? sem ferramenta' }); await espera(900);

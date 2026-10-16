@@ -116,3 +116,89 @@ test('protocolo de ferramenta e leitura dos modelos', () => {
   assert.equal(m.claude.esforco, 'low');
   assert.equal(m.codex.modelo, 'gpt-y');
 });
+
+// ---------- v0.2: agente novo por pedido, com aprovação ----------
+import { acharProposta, validarProposta } from '../lib/propostas.mjs';
+
+test('agente novo: proposta do dono vira aprovação; só depois de aprovar o agente entra e responde', async () => {
+  const { banco, sala, dados } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente pesquisador com notas, sem ferramenta' });
+  const resp = banco.eventos().find((e) => e.tipo === 'resposta');
+  assert.doesNotMatch(resp.texto, /PROPOSTA_AGENTE/, 'o bloco técnico não aparece no chat');
+  assert.equal(typeof resp.meta.ms, 'number', 'tempo da resposta medido');
+  const [a] = banco.pendentes();
+  assert.equal(a.tipo, 'agente');
+  assert.equal(a.dados.agente.id, 'pesquisador');
+  assert.deepEqual(a.dados.agente.ferramentas, ['notas']);
+  assert.match(a.dados.estimativa.custo, /sem API/);
+  assert.ok(banco.eventos().some((e) => e.tipo === 'proposta'));
+  assert.ok(!sala.agentes.pesquisador, 'nada criado antes da aprovação');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@pesquisador oi' });
+  assert.ok(!banco.eventos().some((e) => e.de === 'pesquisador'), '@ de agente inexistente não aciona nada');
+
+  const r = await sala.aprovar(a.id, 'dono');
+  assert.equal(r.estado, 'aprovada');
+  assert.ok(banco.participantes().some((p) => p.id === 'pesquisador' && p.tipo === 'agente' && p.origem === 'proposta'));
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@pesquisador resume isso, sem ferramenta' });
+  assert.equal(banco.eventos().at(-1).de, 'pesquisador');
+  assert.equal(await sala.aprovar(a.id, 'dono'), null, 'não aprova duas vezes');
+
+  // Persistência: outra sala no mesmo diretório de dados já nasce com o agente.
+  const outra = criarSala({ perfil: perfil('pessoa'), banco: abrirBanco(':memory:'), motor: falso, raiz: RAIZ, dados, externo: async () => {} });
+  assert.ok(outra.agentes.pesquisador);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dados, 'agentes.json'), 'utf8'))[0].aprovado_por, 'dono');
+});
+
+test('agente novo: recusar não cria nada', async () => {
+  const { banco, sala } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente revisor, sem ferramenta' });
+  sala.recusar(banco.pendentes()[0].id, 'dono');
+  assert.equal(banco.pendentes().length, 0);
+  assert.ok(!sala.agentes.revisor);
+});
+
+test('agente novo: cliente do Telegram não consegue gerar proposta', async () => {
+  const { banco, sala } = montar('atendimento');
+  banco.participante({ id: 'tg-5', nome: 'C5', tipo: 'pessoa', papel: 'cliente', origem: 'telegram', telegram_id: '5' });
+  await sala.receber({ de: 'tg-5', conversa: 'tg:5', texto: 'cria agente invasor' });
+  assert.ok(!banco.pendentes().some((a) => a.tipo === 'agente'));
+  assert.ok(banco.eventos().some((e) => e.tipo === 'sistema' && /só pessoa da equipe/.test(e.texto)));
+});
+
+test('agente novo: a sala confere id, motor, ferramentas e teto', () => {
+  const ocupados = new Set(['claude', 'codex', 'notas']);
+  const base = { id: 'novo', nome: 'Novo', motor: 'claude', papel: 'ajuda', ferramentas: [], teto_diario: 10 };
+  assert.ok(validarProposta(base, { ocupados }).agente);
+  const erro = (p) => validarProposta({ ...base, ...p }, { ocupados }).erros?.join(' ') || '';
+  assert.match(erro({ id: 'claude' }), /em uso/);
+  assert.match(erro({ id: 'notas' }), /em uso/);
+  assert.match(erro({ id: 'X y' }), /id deve/);
+  assert.match(erro({ motor: 'gpt' }), /motor/);
+  assert.match(erro({ ferramentas: ['email'] }), /não existe/);
+  assert.match(erro({ teto_diario: 500 }), /teto_diario/);
+  assert.match(erro({ papel: '' }), /papel/);
+  // JSON em várias linhas e dentro de bloco de código também é achado.
+  const t = 'Proposta abaixo\n```json\nPROPOSTA_AGENTE: {\n "id": "a-b", "nome": "Ab {x}"\n}\n```\nfim';
+  assert.equal(acharProposta(t).proposta.nome, 'Ab {x}');
+  assert.equal(acharProposta('PROPOSTA_AGENTE: {"id": ').erro, 'JSON da proposta não fecha');
+});
+
+test('agente novo: duas propostas com o mesmo id não ficam pendentes juntas', async () => {
+  const { banco, sala } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente duplo, sem ferramenta' });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente duplo, sem ferramenta' });
+  assert.equal(banco.pendentes().length, 1);
+  assert.match(banco.eventos().at(-1).texto, /em uso/);
+});
+
+test('teto do próprio agente barra respostas além do limite', async () => {
+  const { banco, sala } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente curto, sem ferramenta' });
+  await sala.aprovar(banco.pendentes()[0].id, 'dono');
+  sala.agentes.curto.teto_diario = 1;
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@curto um, sem ferramenta' });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@curto dois, sem ferramenta' });
+  assert.equal(banco.eventos().filter((e) => e.de === 'curto' && e.tipo === 'resposta').length, 1);
+  assert.match(banco.eventos().at(-1).texto, /teto do agente/);
+  assert.equal(banco.contas().curto.hoje, 1);
+});
