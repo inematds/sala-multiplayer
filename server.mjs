@@ -10,6 +10,7 @@ import { criarTelegram } from './lib/telegram.mjs';
 import { claude, codex, falso } from './lib/agentes.mjs';
 import { lerModelos, lerNiveis } from './lib/modelos.mjs';
 import { CAMPOS_SALA, CAMPOS_AGENTE, senhaConfere } from './lib/config.mjs';
+import { criarAcesso, cookieVolta, VERIFICADOR, LOGIN_INEMA } from './lib/acesso.mjs';
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i < 0 ? d : (process.argv[i + 1]?.startsWith('--') || i + 1 >= process.argv.length ? true : process.argv[i + 1]); };
@@ -30,7 +31,7 @@ const host = process.env.SALA_HOST || '127.0.0.1';
 const usarFalso = arg('falso', false) === true || process.env.SALA_AGENTES === 'falso' || arg('demo', false) === true;
 // O demo usa pasta própria e começa limpo a cada início: não mistura com a sala de verdade nem repete a conversa.
 const ehDemo = arg('demo', false) === true;
-const dados = path.join(RAIZ, 'data', ehDemo ? `demo-${perfilId}` : perfilId);
+const dados = process.env.SALA_DADOS || path.join(RAIZ, 'data', ehDemo ? `demo-${perfilId}` : perfilId);
 if (ehDemo) fs.rmSync(dados, { recursive: true, force: true });
 const banco = abrirBanco(path.join(dados, 'sala.db'));
 const modelos = lerModelos();
@@ -87,7 +88,7 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
       const nome = [u.first_name, u.last_name].filter(Boolean).join(' ') + (u.username ? ` @${u.username}` : '');
       await tg.avisar(d.telegram_id, `${nome} mandou ping ao bot. id ${u.id}.` + (livres.length ? `\nPara colocar na sala: /entrar ${u.id} ${livres[0]}${livres.length > 1 ? `  (pessoas sem Telegram: ${livres.join(', ')})` : ''}` : '\nTodas as pessoas do perfil já têm Telegram.')).catch(() => {});
     },
-    async aoComando({ quem, acao, id, conversa, args, tid, pessoa, alvo }) {
+    async aoComando({ quem, acao, id, conversa, args, tid, pessoa, alvo, nome }) {
       if (acao === 'sair') {
         try { await sala.sair(quem.id); await tg.enviar(conversa, 'Você saiu da sala. Para voltar: /entrar.'); }
         catch (e) { await tg.enviar(conversa, `Não saí: ${e.message}.`); }
@@ -96,6 +97,11 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
       if (acao === 'remover') {
         try { const p = await sala.remover(alvo, quem.id); await tg.enviar(conversa, `Feito: ${p.nome} desligado da sala.`); }
         catch (e) { await tg.enviar(conversa, `Não removi: ${e.message}.`); }
+        return;
+      }
+      if (acao === 'convidar') {
+        try { const p = sala.convidarEmail(alvo, quem.id, nome); await tg.enviar(conversa, `Feito: ${p.nome} convidado. Entra direto em ${process.env.SALA_URL_PUBLICA || 'salaconf.inema.pro'} com a conta INEMA.PRO de ${alvo}. Tirar: /remover ${p.id}`); }
+        catch (e) { await tg.enviar(conversa, `Não convidei: ${e.message}.`); }
         return;
       }
       if (acao === 'entrar') {
@@ -137,6 +143,23 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg' };
 const PAGINAS = { '/': 'sala.html', '/sala': 'sala.html', '/grafo': 'grafo.html', '/fluxo': 'fluxo.html', '/config': 'config.html' };
 
+// Login pela conta INEMA.PRO (SALA_LOGIN=inema, ver lib/acesso.mjs). Sem ele a sala fica como sempre foi:
+// painel aberto em 127.0.0.1 e o "Você é" escolhido na tela. Com ele, "/" é a página de apresentação,
+// a identidade vem do email do login e páginas e APIs da sala só abrem para quem está na sala.
+const login = process.env.SALA_LOGIN === 'inema' && !ehDemo;
+const acesso = login ? criarAcesso({ verificador: process.env.SALA_VERIFICADOR_URL || VERIFICADOR }) : null;
+const urlPublica = (process.env.SALA_URL_PUBLICA || 'https://salaconf.inema.pro').replace(/\/+$/, '');
+const PUBLICAS = { '/': 'inicio.html', '/inicio': 'inicio.html', '/aguardando': 'aguardando.html' };
+const PROTEGIDAS = new Set(['/sala', '/grafo', '/fluxo', '/config', '/sala.html', '/grafo.html', '/fluxo.html', '/config.html']);
+
+async function identificar(req) {
+  const r = await acesso.quem(req.headers.cookie);
+  const eu = r.status === 200 ? banco.porEmail(r.email) : null;
+  return { ...r, eu: eu && eu.tipo === 'pessoa' ? eu : null };
+}
+const resumoEu = (eu) => eu && { id: eu.id, nome: eu.nome, papel: eu.papel, email: eu.email, dono: eu.id === sala.dono };
+const redirecionar = (res, onde, extra = {}) => { res.writeHead(302, { location: onde, 'cache-control': 'no-store', ...extra }); res.end(); };
+
 const json = (res, obj, code = 200) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
 const corpo = (req) => new Promise((ok, falha) => {
   let s = ''; req.on('data', (d) => { s += d; if (s.length > 1e5) req.destroy(); });
@@ -144,11 +167,12 @@ const corpo = (req) => new Promise((ok, falha) => {
 });
 const daEquipe = (id) => (perfil.pessoas || []).some((p) => p.id === id);
 
-function estado() {
+function estado(eu) {
   return {
+    login, eu: resumoEu(eu),
     perfil: { id: perfil.id, nome: perfil.nome, descricao: perfil.descricao, equipe: perfil.pessoas, teto_diario: perfil.teto_diario ?? 200, teto_turnos: perfil.teto_turnos ?? 4 },
     modo: usarFalso ? 'falso' : 'real', telegram: Boolean(tg),
-    participantes: banco.participantes(), eventos: banco.eventos(400), pendentes: banco.pendentes(),
+    participantes: banco.participantes().map(({ email, ...p }) => p), eventos: banco.eventos(400), pendentes: banco.pendentes(),
     stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
     agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, nivel: a.nivel || 'executor', esforco: a.esforco || '', linhas_max: a.linhas_max || perfil.linhas_max || 6, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
     niveis, config: sala.config(),
@@ -159,7 +183,31 @@ function estado() {
 const servidor = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try {
-    if (req.method === 'GET' && url.pathname === '/api/estado') return json(res, estado());
+    let eu = null;
+    if (login) {
+      const pub = PUBLICAS[url.pathname];
+      if (req.method === 'GET' && pub) { res.writeHead(200, { 'content-type': TIPOS['.html'] }); return fs.createReadStream(path.join(RAIZ, 'public', pub)).pipe(res); }
+      const precisa = url.pathname === '/entrar' || url.pathname.startsWith('/api/') || PROTEGIDAS.has(url.pathname);
+      if (precisa) {
+        const id = await identificar(req);
+        if (id.novos?.length) res.setHeader('set-cookie', id.novos); // sessão renovada no inema.pro volta ao navegador
+        if (url.pathname === '/entrar') {
+          if (id.status === 403) return redirecionar(res, '/?assinante=nao');
+          if (id.status !== 200) return redirecionar(res, LOGIN_INEMA, { 'set-cookie': [...(id.novos || []), cookieVolta(`${urlPublica}/entrar`)] });
+          if (id.eu) return redirecionar(res, '/sala');
+          const r = await sala.pedirEntradaWeb({ email: id.email });
+          return redirecionar(res, r.ja || r.voltou ? '/sala' : r.bloqueado ? '/aguardando?b=1' : '/aguardando');
+        }
+        if (url.pathname === '/api/eu') {
+          const pendente = id.email && !id.eu ? banco.pendentes().some((a) => a.tipo === 'convite' && a.dados.email === id.email) : false;
+          return json(res, { status: id.status, email: id.email || null, eu: resumoEu(id.eu), pendente });
+        }
+        if (!id.eu) return url.pathname.startsWith('/api/') ? json(res, { erro: 'entre com sua conta INEMA.PRO', status: id.status }, 401) : redirecionar(res, '/entrar');
+        eu = id.eu;
+      }
+    }
+    const ehDono = Boolean(eu && eu.id === sala.dono);
+    if (req.method === 'GET' && url.pathname === '/api/estado') return json(res, estado(eu));
     if (req.method === 'GET' && url.pathname === '/api/stream') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
       const manda = (tipo) => (d) => {
@@ -174,7 +222,8 @@ const servidor = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url.pathname === '/api/mensagem') {
       const b = await corpo(req);
-      if (!daEquipe(b.de) || !b.texto?.trim()) return json(res, { erro: 'remetente ou texto inválido' }, 400);
+      if (login) b.de = eu.id; // com login, quem fala é quem entrou (convidado também)
+      if (!(login || daEquipe(b.de)) || !b.texto?.trim()) return json(res, { erro: 'remetente ou texto inválido' }, 400);
       sala.receber({ de: b.de, conversa: b.conversa || 'painel', texto: b.texto.trim() }).catch((e) => console.log(e));
       return json(res, { ok: true });
     }
@@ -183,24 +232,32 @@ const servidor = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url.pathname === '/api/config') {
       const b = await corpo(req);
-      if (!senhaConfere(b.senha)) return json(res, { erro: 'senha do dono errada (ou SALA_DONO_SENHA vazia no .env)' }, 403);
+      if (!ehDono && !senhaConfere(b.senha)) return json(res, { erro: 'senha do dono errada (ou SALA_DONO_SENHA vazia no .env)' }, 403);
       try { return json(res, { ok: true, mudou: sala.mudarConfig(b.mudancas, sala.dono) }); }
       catch (e) { return json(res, { erro: e.message }, 400); }
     }
     // Dono liga ou desliga um convidado pelo painel (com a senha).
     if (req.method === 'POST' && url.pathname === '/api/convidado') {
       const b = await corpo(req);
-      if (!senhaConfere(b.senha)) return json(res, { erro: 'só o dono liga ou desliga convidado, com a senha' }, 403);
+      if (!ehDono && !senhaConfere(b.senha)) return json(res, { erro: 'só o dono liga ou desliga convidado, com a senha' }, 403);
       try { return json(res, { ok: true, participante: await sala.ligarConvidado(String(b.id), Boolean(b.ativo), sala.dono) }); }
+      catch (e) { return json(res, { erro: e.message }, 400); }
+    }
+    // Dono convida um email (login INEMA.PRO): a pessoa entra direto no primeiro login.
+    if (req.method === 'POST' && url.pathname === '/api/convidar') {
+      const b = await corpo(req);
+      if (!ehDono && !senhaConfere(b.senha)) return json(res, { erro: 'só o dono convida, com a senha' }, 403);
+      try { return json(res, { ok: true, participante: sala.convidarEmail(b.email, sala.dono, b.nome) }); }
       catch (e) { return json(res, { erro: e.message }, 400); }
     }
     if (req.method === 'POST' && (url.pathname === '/api/aprovar' || url.pathname === '/api/recusar')) {
       const b = await corpo(req);
-      const quem = (perfil.pessoas || []).find((p) => p.id === b.de);
+      if (login) b.de = eu.id;
+      const quem = login ? eu : (perfil.pessoas || []).find((p) => p.id === b.de);
       // Mudança de configuração e convidado: só o dono, com a senha (o "Você é" do painel não prova quem é).
       const tipoAp = banco.aprovacao(Number(b.id))?.tipo;
       if (tipoAp === 'config' || tipoAp === 'convite') {
-        if (!senhaConfere(b.senha)) return json(res, { erro: `${tipoAp === 'config' ? 'mudança de configuração' : 'convidado'}: só o dono decide, com a senha` }, 403);
+        if (!ehDono && !senhaConfere(b.senha)) return json(res, { erro: `${tipoAp === 'config' ? 'mudança de configuração' : 'convidado'}: só o dono decide, com a senha` }, 403);
         b.de = sala.dono;
       } else if (!quem || !(perfil.aprovadores || []).includes(quem.papel)) return json(res, { erro: 'sem permissão para aprovar' }, 403);
       let r;

@@ -17,8 +17,12 @@
     <section class="bloco"><h3>Convidados do Telegram</h3>
       <p class="mut">A pessoa manda <code>/entrar</code> ao bot e você aceita aqui (Aprovações pendentes na Sala) ou no Telegram com <code>/aceitar N</code>. Desligar aqui ou com <code>/remover nome</code>; ela mesma sai com <code>/sair</code>. Usa a senha do dono abaixo.</p>
       <div id="convidados"></div></section>
+    <section class="bloco" id="bloco-convidar" hidden><h3>Convidar pela web</h3>
+      <p class="mut">Quem você convida aqui entra direto em <code>salaconf.inema.pro</code> com a conta INEMA.PRO desse email, sem pedido. Quem não foi convidado entra, faz o pedido e espera você aceitar. No Telegram: <code>/convidar email nome</code>.</p>
+      <div class="campos"><label>Email <input id="conv-email" type="email" autocomplete="off"></label><label>Nome <input id="conv-nome" autocomplete="off"></label>
+      <button class="btn" type="button" id="conv-btn">Convidar</button></div></section>
     <section class="bloco salvar">
-      <label>Senha do dono <input id="senha" type="password" autocomplete="current-password"></label>
+      <label id="rot-senha">Senha do dono <input id="senha" type="password" autocomplete="current-password"></label>
       <button class="btn pri" type="submit">Salvar mudanças</button>
       <span id="msg" role="status"></span>
     </section>
@@ -30,6 +34,14 @@ const $ = (id) => document.getElementById(id);
 await iniciar((tipo) => { if (tipo === 'config') carregar(); if (tipo === 'participante') convidados(); });
 nav('config');
 let C;
+// Dono logado pelo INEMA.PRO não precisa da senha.
+if (S.estado.eu?.dono) $('rot-senha').hidden = true;
+if (S.estado.login) $('bloco-convidar').hidden = false;
+$('conv-btn').onclick = async () => {
+  const r = await (await fetch('/api/convidar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: $('conv-email').value, nome: $('conv-nome').value, senha: $('senha').value }) })).json();
+  $('msg').textContent = r.ok ? `Convidado: ${r.participante.nome}.` : r.erro;
+  if (r.ok) { $('conv-email').value = ''; $('conv-nome').value = ''; }
+};
 const NIVEL = { super: 'super (o mais forte)', topo: 'topo', executor: 'executor (padrão)', menor: 'menor (rápido)' };
 
 function campo(nome, def, valor, motor) {
@@ -48,7 +60,7 @@ async function carregar() {
     <div class="campos">${Object.entries(C.campos_agente).map(([k, d]) => campo(`agente.${a.id}.${k}`, d, a[k], a.motor)).join('')}</div></div>`).join('');
   document.querySelectorAll('[data-c]').forEach((el) => { el.dataset.orig = el.value; });
   convidados();
-  if (!C.senha_definida) $('msg').textContent = 'SALA_DONO_SENHA está vazia no .env: pelo painel nada muda.';
+  if (!C.senha_definida && !S.estado.eu?.dono) $('msg').textContent = 'SALA_DONO_SENHA está vazia no .env: pelo painel nada muda.';
 }
 
 const SAIDA = { saiu: 'saiu sozinho', removido: 'removido pelo dono', expirou: 'convite venceu' };

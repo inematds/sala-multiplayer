@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sala multiplayer · INEMA</title>
+<meta name="description" content="Pessoas e agentes de IA (Claude e Codex) na mesma conversa, com aprovação humana. Entre com sua conta INEMA.PRO.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  body{display:block;height:auto;min-height:100%}
+  .ini{max-width:1160px;margin:0 auto;padding:40px 16px 56px}
+  .ini .chip{display:inline-block;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+  .ini h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:18px 0 14px;max-width:18ch}
+  .ini h1 span{color:var(--amb)}
+  .ini .lead{font-size:1.15rem;color:var(--mut);max-width:62ch;margin:0 0 26px}
+  .ini .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .ini .btn-g{display:inline-flex;align-items:center;gap:10px;background:var(--amb);color:var(--amb-txt);font:700 1rem Sora,Inter,sans-serif;padding:13px 22px;border-radius:10px;text-decoration:none}
+  .ini .btn-s{color:var(--txt);text-decoration:none;padding:13px 6px;font-weight:600}
+  .ini .aviso{border:1px solid var(--line);border-left:4px solid var(--amb);background:var(--card);border-radius:14px;padding:14px 16px;margin:0 0 24px;max-width:70ch}
+  .ini .aviso a{color:var(--amb);font-weight:700}
+  .ini h2{font-size:1.4rem;margin:52px 0 16px}
+  .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .cart{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .cart h3{margin:10px 0 6px;font-size:1.05rem}
+  .cart p{margin:0;color:var(--mut)}
+  .cart svg{width:26px;height:26px;stroke:var(--amb);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .passos{counter-reset:p;list-style:none;padding:0;margin:0;display:grid;gap:12px;max-width:74ch}
+  .passos li{counter-increment:p;display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .passos li::before{content:counter(p);flex:none;width:32px;height:32px;border-radius:12px;background:var(--amb);color:var(--amb-txt);font:800 1rem Sora,sans-serif;display:grid;place-items:center}
+  .passos b{display:block}
+  .passos span{color:var(--mut)}
+  .rod{border-top:1px solid var(--line);margin-top:56px;padding-top:18px;color:var(--mut);font-size:.92rem;display:flex;gap:16px;flex-wrap:wrap}
+  .rod a{color:var(--sky);text-decoration:none;font-weight:700}
+  .rod a.cod{color:var(--mut);font-weight:400}
+</style>
+</head>
+<body>
+<main class="ini">
+  <span class="chip">INEMA.PRO · sala multiplayer</span>
+  <h1>Pessoas e agentes de IA <span>na mesma conversa.</span></h1>
+  <p class="lead">A sala junta você, a equipe e dois agentes de IA, o Claude e o Codex, num chat só. Os agentes respondem quando você chama. O que for sensível espera uma pessoa aprovar.</p>
+  <div class="aviso" id="sem-assinatura" hidden>Sua conta entrou, mas não tem assinatura INEMA.PRO ativa. A sala é para assinantes. <a href="https://pay.inema.pro/">Ver a assinatura</a></div>
+  <div class="cta">
+    <a class="btn-g" href="/entrar">Entrar com a conta INEMA.PRO</a>
+    <a class="btn-s" href="#como">Como funciona</a>
+  </div>
+
+  <h2 id="como">Como funciona</h2>
+  <div class="grade">
+    <div class="cart"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <h3>Converse e chame um agente</h3><p>Escreva como num grupo. Para pedir algo a um agente, use <b>@claude</b> ou <b>@codex</b>.</p></div>
+    <div class="cart"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      <h3>Uma pessoa aprova</h3><p>Agente novo, mudança de limite e entrada de convidado só passam com o dono da sala.</p></div>
+    <div class="cart"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 11l10-5M7 13l10 5"/></svg>
+      <h3>Tudo ao vivo</h3><p>Veja quem fala com quem no grafo, as rodadas no fluxo e os assuntos organizados em tópicos.</p></div>
+    <div class="cart"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+      <h3>Também pelo Telegram</h3><p>A mesma sala responde no bot do Telegram. O que se fala lá aparece aqui.</p></div>
+  </div>
+
+  <h2>Como entrar</h2>
+  <ol class="passos">
+    <li><div><b>Entre com sua conta INEMA.PRO</b><span>A mesma do inema.pro. A sala é para assinantes.</span></div></li>
+    <li><div><b>Convidado entra direto</b><span>Se o dono já convidou o seu email, você cai na sala na hora.</span></div></li>
+    <li><div><b>Os outros pedem e esperam</b><span>Seu pedido vai para o dono. Você entra assim que ele aceitar.</span></div></li>
+  </ol>
+
+  <footer class="rod">
+    <a href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
+    <a class="cod" href="https://github.com/inematds/sala-multiplayer" target="_blank" rel="noopener">código aberto no GitHub</a>
+  </footer>
+</main>
+<script>
+  try { if (localStorage.getItem('sala-tema') === 'light') document.body.classList.add('light'); } catch {}
+  if (new URLSearchParams(location.search).get('assinante') === 'nao') document.getElementById('sem-assinatura').hidden = false;
+</script>
+</body>
+</html>

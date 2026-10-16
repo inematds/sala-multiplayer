@@ -55,6 +55,24 @@ npm run atendimento   # setor de atendimento  → http://127.0.0.1:4600
 
 É **um bot só**: os agentes respondem por ele, com o nome na frente ("Claude: ..."). Isso é necessário porque um bot do Telegram não enxerga mensagens de outro bot.
 
+## Publicar na internet com login INEMA.PRO
+
+Para abrir a sala fora da sua máquina (ex.: `salaconf.inema.pro`), ligue o login pela conta INEMA.PRO no `.env`:
+
+```
+SALA_LOGIN=inema
+SALA_URL_PUBLICA=https://salaconf.inema.pro
+SALA_DONO_EMAIL=email-da-sua-conta-inema-pro
+SALA_TIZA_EMAIL=email-da-conta-dela
+```
+
+- `/` vira uma página de apresentação com o botão **Entrar com a conta INEMA.PRO**. A sala, o grafo, o fluxo, a config e as APIs só abrem para quem está na sala.
+- O login é o do inema.pro (Google ou link por email). A sala não guarda senha nem token: repassa o cookie de sessão ao `www.inema.pro/api/assinatura` e lê só o veredito. **Só assinantes em dia** entram.
+- Quem você é vem do email: o dono e a equipe pelos emails do `.env`; o "Você é" vira só um rótulo. O dono logado aprova sem digitar a senha.
+- **Convidado entra direto** se o dono convidou o email antes (`/convidar email nome` no Telegram ou "Convidar pela web" na tela Config).
+- **Os outros pedem e esperam**: o pedido chega ao dono no Telegram (`/aceitar N`) e em "Aprovações pendentes" no painel. A pessoa fica em `/aguardando`, que abre a sala sozinha quando o dono aceita.
+- O domínio tem que ser `*.inema.pro` (o cookie de sessão vale só aí). Na frente, um proxy com HTTPS; no Caddy: `reverse_proxy 127.0.0.1:4600 { flush_interval -1 }` (o `flush_interval` mantém o chat ao vivo).
+
 ## Como funciona
 
 - **Chamar agente:** escreva `@claude` ou `@codex`. Entre agentes vale só o `@id` no começo da frase ("@codex, revisa isto?"); citar o nome no meio do texto ("falta aprovar o @critico") não chama ninguém. Resposta que só confirma ("combinado, aguardo o Dono") não chama ninguém e aparece com o selo "só confirma". Um agente só chama de volta quem falou com ele se fizer uma pergunta. Sem menção, vale a rota do perfil: no modo pessoa vai para o Claude; no atendimento, mensagem de cliente vai para o Claude e conversa da equipe fica só entre pessoas.

@@ -3,8 +3,8 @@
   "nome": "Eu e meus agentes",
   "descricao": "Uma pessoa e seus agentes. Painel local. O dono fala pelo painel ou pelo Telegram; convidado entra pelo Telegram com /entrar e o dono aceita.",
   "pessoas": [
-    { "id": "dono", "nome": "Dono", "papel": "dono", "telegram_id_env": "SALA_DONO_TELEGRAM_ID" },
-    { "id": "tiza", "nome": "Tiza", "papel": "equipe", "telegram_id_env": "SALA_TIZA_TELEGRAM_ID" }
+    { "id": "dono", "nome": "Dono", "papel": "dono", "telegram_id_env": "SALA_DONO_TELEGRAM_ID", "email_env": "SALA_DONO_EMAIL" },
+    { "id": "tiza", "nome": "Tiza", "papel": "equipe", "telegram_id_env": "SALA_TIZA_TELEGRAM_ID", "email_env": "SALA_TIZA_EMAIL" }
   ],
   "agentes": [
     { "id": "claude", "nome": "Claude", "motor": "claude", "nivel": "executor", "esforco": "", "papel": "assistente pessoal: organiza, resume, escreve e guarda notas",

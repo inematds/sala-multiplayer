@@ -39,11 +39,12 @@ export function nav(ativa) {
     <span class="selo ${e.modo === 'falso' ? 'alerta' : ''}" title="agentes">${e.modo === 'falso' ? 'agentes falsos' : 'agentes reais'}</span>
     <span class="selo" title="Telegram">${icone('telegram')} ${e.telegram ? 'ligado' : 'desligado'}</span>
     <div class="links">
-      <a href="/" class="${ativa === 'sala' ? 'on' : ''}">Sala</a>
+      <a href="/sala" class="${ativa === 'sala' ? 'on' : ''}">Sala</a>
       <a href="/grafo" class="${ativa === 'grafo' ? 'on' : ''}">Grafo</a>
       <a href="/fluxo" class="${ativa === 'fluxo' ? 'on' : ''}">Fluxo</a>
       <a href="/config" class="${ativa === 'config' ? 'on' : ''}">Config</a>
     </div>
+    ${e.eu ? `<span class="selo" title="${esc(e.eu.email || '')}">${esc(e.eu.nome)}${e.eu.dono ? ' · dono' : e.eu.papel === 'convidado' ? ' · convidado' : ''}</span>` : ''}
     <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
     <button class="tema" aria-label="tema claro ou escuro">${document.body.classList.contains('light') ? '☀️' : '🌙'}</button>`;
   el.querySelector('.tema').onclick = (ev) => {

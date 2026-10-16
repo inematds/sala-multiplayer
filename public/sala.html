@@ -72,9 +72,11 @@ await iniciar((tipo, d) => { render(tipo); if (tipo === 'evento') grafo?.pulso(d
 grafo = criarGrafo($('mini-grafo'), { compacto: true, aoClicar: (id) => { sel = sel === id ? null : id; verAba('conversa'); render(); } });
 $('legenda-mini').innerHTML = ['pessoa', 'cliente', 'agente', 'ferramenta'].map((c) => `<span class="t-${c}">${icone(c)}<span>${ROTULO[c]}</span></span>`).join('');
 nav('sala');
-const equipe = S.estado.perfil.equipe;
+// Com login INEMA.PRO, quem fala é quem entrou: o "Você é" vira só um rótulo.
+const equipe = S.estado.eu ? [S.estado.eu] : S.estado.perfil.equipe;
 if (!equipe.some((p) => p.id === eu)) eu = equipe[0].id;
 $('eu').innerHTML = equipe.map((p) => `<option value="${p.id}" ${p.id === eu ? 'selected' : ''}>Você é: ${esc(p.nome)}</option>`).join('');
+$('eu').disabled = Boolean(S.estado.eu);
 $('eu').onchange = (e) => { eu = e.target.value; try { localStorage.setItem('sala-eu', eu); } catch {} render(); };
 document.querySelectorAll('#tabs .tab').forEach((b) => b.onclick = () => { aba = b.dataset.t; document.querySelectorAll('#tabs .tab').forEach((x) => x.classList.toggle('on', x === b)); render(); });
 $('conversa').onchange = (e) => { conversa = e.target.value; render(); };
@@ -103,19 +105,25 @@ function infoAgente(id) {
   const g = S.estado.agentes?.find((x) => x.id === id);
   return g ? ` · ${modeloDe(g.motor, g.nivel)}${g.esforco ? ' ' + g.esforco : ''}` : '';
 }
+// Dono logado pelo INEMA.PRO não digita senha; os outros veem que só o dono decide.
+function senhaDono() {
+  if (S.estado.eu?.dono) return '';
+  if (S.estado.eu) return '<div class="senha">Só o dono decide.</div>';
+  return '<label class="senha">Só o dono decide. Senha do dono <input type="password" data-senha autocomplete="current-password"></label>';
+}
 function cartaoConfig(a) {
   return `<div class="ap" data-id="${a.id}">
     <div class="q">#${a.id} · ${esc(part(a.de).nome)} propõe mudar a configuração · pedido de ${esc(part(a.para).nome)} · ${hora(a.hora)}</div>
     <div class="prop">${esc(a.texto)}</div>
-    <label class="senha">Só o dono decide. Senha do dono <input type="password" data-senha autocomplete="current-password"></label>
+    ${senhaDono()}
     <div class="acoes"><button class="btn pri" data-a="aprovar">Aprovar mudança</button><button class="btn" data-a="recusar">Recusar</button></div>
   </div>`;
 }
 function cartaoConvite(a) {
   return `<div class="ap" data-id="${a.id}">
-    <div class="q">#${a.id} · pedido de entrada pelo Telegram · ${hora(a.hora)}</div>
+    <div class="q">#${a.id} · pedido de entrada ${a.dados?.email ? 'pela web (INEMA.PRO)' : 'pelo Telegram'} · ${hora(a.hora)}</div>
     <div class="prop">${esc(a.texto)}<div><span class="r">Como convidado</span> conversa e chama os agentes; não aprova nada nem muda a configuração. Teto de ${S.estado.config?.teto_convidado ?? 30} respostas por dia.</div></div>
-    <label class="senha">Só o dono decide. Senha do dono <input type="password" data-senha autocomplete="current-password"></label>
+    ${senhaDono()}
     <div class="acoes"><button class="btn pri" data-a="aprovar">Aceitar convidado</button><button class="btn" data-a="recusar">Recusar</button></div>
   </div>`;
 }

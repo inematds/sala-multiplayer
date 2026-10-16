@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aguardando o dono · Sala multiplayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  body{display:grid;place-items:center;min-height:100%;padding:16px}
+  .esp{max-width:560px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 24px}
+  .esp h1{font-size:1.5rem;margin:0 0 10px}
+  .esp p{color:var(--mut);margin:0 0 14px}
+  .esp .email{color:var(--txt);font-weight:600}
+  .esp a{color:var(--amb);font-weight:700}
+  .esp .btn-g{display:inline-block;background:var(--amb);color:var(--amb-txt);font:700 1rem Sora,Inter,sans-serif;padding:11px 18px;border-radius:10px;text-decoration:none}
+</style>
+</head>
+<body>
+<main class="esp" aria-live="polite">
+  <h1 id="tit">Pedido enviado</h1>
+  <p id="txt">Carregando…</p>
+  <p id="acao"></p>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const bloqueado = new URLSearchParams(location.search).get('b') === '1';
+  async function ver() {
+    let r;
+    try { r = await (await fetch('/api/eu', { cache: 'no-store' })).json(); } catch { $('txt').textContent = 'Sem conexão com a sala. Tentando de novo…'; return; }
+    if (r.eu) { location.href = '/sala'; return; }
+    if (r.status !== 200) { location.href = r.status === 403 ? '/?assinante=nao' : '/entrar'; return; }
+    const em = `<span class="email">${r.email.replace(/[<>&"]/g, '')}</span>`;
+    if (bloqueado) {
+      $('tit').textContent = 'Acesso desligado';
+      $('txt').innerHTML = `A conta ${em} é da equipe desta sala e está desligada. Fale com o dono.`;
+      $('acao').innerHTML = '';
+      return;
+    }
+    if (r.pendente) {
+      $('tit').textContent = 'Pedido enviado';
+      $('txt').innerHTML = `Você entrou como ${em}. O dono da sala recebeu o pedido e você entra assim que ele aceitar. Pode deixar esta página aberta: ela abre a sala sozinha.`;
+      $('acao').innerHTML = '';
+    } else {
+      $('tit').textContent = 'Pedido não aceito';
+      $('txt').innerHTML = `O dono não aceitou o pedido de ${em} agora.`;
+      $('acao').innerHTML = '<a class="btn-g" href="/entrar">Pedir de novo</a>';
+    }
+  }
+  try { if (localStorage.getItem('sala-tema') === 'light') document.body.classList.add('light'); } catch {}
+  ver(); setInterval(ver, 8000);
+</script>
+</body>
+</html>
