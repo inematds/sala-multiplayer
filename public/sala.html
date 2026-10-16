@@ -8,26 +8,33 @@
 <link rel="stylesheet" href="/estilo.css">
 </head>
 <body>
-<section class="topo">
+<section class="topo topo-2">
   <div class="kpi"><div class="r">Mensagens na última hora</div><div class="v" id="k-msgs">0</div><div class="s">pessoas, agentes e ferramentas</div></div>
   <div class="kpi"><div class="r">Agentes trabalhando</div><div class="v" id="k-ativos">0</div><div class="s" id="k-ativos-n">nenhum agora</div></div>
-  <div class="kpi chama" id="k-aprov-box" role="button" tabindex="0"><div class="r">Aprovações pendentes</div><div class="v" id="k-aprov">0</div><div class="s">clique para ver e decidir</div></div>
-  <div class="kpi"><div class="r">Respostas de agentes hoje</div><div class="v" id="k-hoje">0</div><div class="s" id="k-teto">teto diário</div></div>
 </section>
 <section class="aprov" id="aprov"><h3>Esperando aprovação humana</h3><div id="aprov-lista"></div></section>
 <main class="sala">
   <div class="abas-movel" role="group" aria-label="ver">
     <button class="tab on" data-aba="conversa">Conversa</button>
     <button class="tab" data-aba="topicos">Tópicos <span id="n-top"></span></button>
+    <button class="tab" data-aba="grafo">Grafo</button>
   </div>
   <aside class="lado">
-    <div class="tabs" id="tabs">
-      <button class="tab on" data-t="todos">Todos</button>
-      <button class="tab" data-t="pessoa">Pessoas</button>
-      <button class="tab" data-t="agente">Agentes</button>
-      <button class="tab" data-t="ferramenta">Ferramentas</button>
+    <div class="mini">
+      <div class="kpi chama" id="k-aprov-box" role="button" tabindex="0"><div class="r">Aprovações</div><div class="v" id="k-aprov">0</div><div class="s">clique para decidir</div></div>
+      <div class="kpi"><div class="r">Respostas hoje</div><div class="v" id="k-hoje">0</div><div class="s" id="k-teto">teto diário</div></div>
     </div>
-    <div class="lista" id="lista"></div>
+    <div class="topicos" id="topicos" aria-label="tópicos"></div>
+    <details class="pessoas" open>
+      <summary>Participantes</summary>
+      <div class="tabs" id="tabs">
+        <button class="tab on" data-t="todos">Todos</button>
+        <button class="tab" data-t="pessoa">Pessoas</button>
+        <button class="tab" data-t="agente">Agentes</button>
+        <button class="tab" data-t="ferramenta">Ferramentas</button>
+      </div>
+      <div class="lista" id="lista"></div>
+    </details>
   </aside>
   <section class="chat">
     <div class="cab">
@@ -43,27 +50,36 @@
       <button class="btn pri" type="submit">Enviar</button>
     </form>
   </section>
-  <aside class="topicos" id="topicos" aria-label="tópicos"></aside>
+  <aside class="grafo-lado" aria-label="grafo ao vivo">
+    <div class="gl-cab"><h3>Grafo ao vivo</h3><a href="/grafo">abrir grande</a></div>
+    <svg id="mini-grafo" role="img" aria-label="quem conversa com quem"></svg>
+    <div class="legenda-mini" id="legenda-mini"></div>
+  </aside>
 </main>
 <script type="module">
 import { S, iniciar, nav, icone, esc, hora, part, classe, nomeConversa, postar, ROTULO } from '/comum.js';
 import { rodadas, resolucao } from '/rodadas.js';
+import { criarGrafo } from '/grafo-vivo.js';
 
 let aba = 'todos', sel = new URLSearchParams(location.search).get('p'), conversa = 'todas';
 let selTop = Number(new URLSearchParams(location.search).get('t')) || null;
 const $ = (id) => document.getElementById(id);
 let eu = (() => { try { return localStorage.getItem('sala-eu'); } catch { return null; } })();
 
-await iniciar((tipo) => { render(tipo); });
+let grafo;
+await iniciar((tipo, d) => { render(tipo); if (tipo === 'evento') grafo?.pulso(d); });
+// Grafo ao vivo na coluna direita: clicar num participante filtra o chat por ele.
+grafo = criarGrafo($('mini-grafo'), { compacto: true, aoClicar: (id) => { sel = sel === id ? null : id; verAba('conversa'); render(); } });
+$('legenda-mini').innerHTML = ['pessoa', 'cliente', 'agente', 'ferramenta'].map((c) => `<span class="t-${c}">${icone(c)}<span>${ROTULO[c]}</span></span>`).join('');
 nav('sala');
 const equipe = S.estado.perfil.equipe;
 if (!equipe.some((p) => p.id === eu)) eu = equipe[0].id;
 $('eu').innerHTML = equipe.map((p) => `<option value="${p.id}" ${p.id === eu ? 'selected' : ''}>Você é: ${esc(p.nome)}</option>`).join('');
 $('eu').onchange = (e) => { eu = e.target.value; try { localStorage.setItem('sala-eu', eu); } catch {} render(); };
-document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { aba = b.dataset.t; document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b)); render(); });
+document.querySelectorAll('#tabs .tab').forEach((b) => b.onclick = () => { aba = b.dataset.t; document.querySelectorAll('#tabs .tab').forEach((x) => x.classList.toggle('on', x === b)); render(); });
 $('conversa').onchange = (e) => { conversa = e.target.value; render(); };
 $('k-aprov-box').onclick = () => $('aprov').classList.toggle('aberta');
-const verAba = (a) => { document.body.classList.toggle('aba-topicos', a === 'topicos'); document.querySelectorAll('.abas-movel .tab').forEach((b) => b.classList.toggle('on', b.dataset.aba === a)); };
+const verAba = (a) => { document.body.classList.toggle('aba-topicos', a === 'topicos'); document.body.classList.toggle('aba-grafo', a === 'grafo'); if (a === 'grafo') grafo?.desenhar(); document.querySelectorAll('.abas-movel .tab').forEach((b) => b.classList.toggle('on', b.dataset.aba === a)); };
 document.querySelectorAll('.abas-movel .tab').forEach((b) => b.onclick = () => verAba(b.dataset.aba));
 $('texto').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('comp').requestSubmit(); } });
 $('comp').onsubmit = async (e) => {
@@ -188,12 +204,13 @@ function render() {
   }).join('') || '<div class="pa">Sem mensagens ainda. Escreva abaixo ou mande algo para o bot no Telegram.</div>';
   if (noFim) box.scrollTop = box.scrollHeight;
   topicos();
+  grafo?.desenhar();
 }
 
 // Avatar de cada mensagem pelo tipo de quem fala (as suas usam 🧑‍💻).
 const AVATAR = { pessoa: '🙂', cliente: '🙋', agente: '🤖', ferramenta: '🛠️', sistema: '⚠️' };
 
-// ---------- Tópicos: lista à direita e resumo no alto do chat ----------
+// ---------- Tópicos: lista à esquerda e resumo no alto do chat ----------
 const ESTADO_TXT = { 'em debate': 'em debate', decidido: 'decidido', parado: 'parado' };
 function estadoDe(t, rs) {
   if (t.rodadas.some((id) => rs.get(String(id)) && resolucao(rs.get(String(id)), S.estado).pendentes.length)) return 'em debate';
