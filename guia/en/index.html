@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala Multiplayer — people and AI agents in the same room</title>
+<meta name="description" content="People, Claude Code, Codex and Telegram in the same conversation, with a live dashboard and human approval. Runs on your computer, on your own subscription.">
+<link rel="alternate" hreflang="pt-BR" href="https://inematds.github.io/sala-multiplayer/guia/">
+<link rel="alternate" hreflang="en" href="https://inematds.github.io/sala-multiplayer/guia/en/">
+<link rel="alternate" hreflang="es" href="https://inematds.github.io/sala-multiplayer/guia/es/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c10; --bg2:#14141b; --card:#16161e; --line:#272730;
+    --txt:#e9e9ee; --mut:#9a9aa6; --amb:#FACC15; --amb2:#f0c070; --sky:#38bdf8; --pro:#cbd5e1;
+    color-scheme:dark;
+  }
+  body.light{
+    --bg:#f6f7f9; --bg2:#eceef2; --card:#ffffff; --line:#e1e3ea;
+    --txt:#1a1a22; --mut:#5b5b68; --amb:#a16207; --amb2:#a16207; --sky:#0369a1; --pro:#b45309;
+    color-scheme:light;
+  }
+  body.light .hero .glow{opacity:.5}
+  body.light pre{background:#0e0e14;color:#d6d6e0}
+  body.light pre .c{color:#8a8a98}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Sora,sans-serif;line-height:1.15;margin:0}
+  a{color:var(--amb);text-decoration:none}
+  code,pre{font-family:"JetBrains Mono",monospace}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  .mut{color:var(--mut)} .amb{color:var(--amb)}
+  .chip{display:inline-block;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);font-weight:600;font-family:Sora}
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:rgba(12,12,16,.78);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+  nav .brand{display:flex;align-items:center;gap:8px;font-family:Sora;font-weight:800;letter-spacing:-.02em;color:var(--amb)}
+  nav .brand .emoji{font-size:1.25rem}
+  nav .sep{color:var(--mut);opacity:.45}
+  nav .inema{color:var(--sky);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .inema:hover{filter:brightness(1.15)}
+  nav .pro{color:var(--pro);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .pro:hover{filter:brightness(1.15)}
+  nav .clubpro{display:inline-flex;align-items:center;gap:6px}
+  nav .links{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:.92rem}
+  nav .links a.sec{color:var(--mut)} nav .links a.sec:hover{color:var(--txt)}
+  .lang{display:inline-flex;gap:2px;font-family:Sora;font-size:.78rem}
+  .lang a{color:var(--mut);padding:.2em .45em;border-radius:6px} .lang a.on{color:var(--amb);background:rgba(250,204,21,.12)}
+  .tgl{background:var(--bg2);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}
+  .tgl:hover{border-color:var(--amb)}
+  .btn{display:inline-block;background:var(--amb);color:#1a1206;font-weight:600;padding:.6em 1.05em;border-radius:10px;font-family:Sora}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  @media(max-width:1060px){nav .links a.sec{display:none}}
+  @media(max-width:520px){nav .wrap{gap:8px;padding:8px 14px;height:auto;flex-wrap:wrap} nav .links{gap:8px;margin-left:0;width:100%;justify-content:space-between} nav .btn{padding:.45em .7em;font-size:.82rem} .tgl{width:34px;height:34px}}
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .hero .glow{position:absolute;inset:-40% -20% auto auto;width:70%;height:600px;background:radial-gradient(closest-side,rgba(250,204,21,.22),transparent 70%);pointer-events:none}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:74px 22px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.025em}
+  .hero p.lead{font-size:1.18rem;color:var(--mut);margin:1.1em 0 1.6em;max-width:34ch}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero figure{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000}
+  .hero figure img{width:100%;display:block}
+  .resumo{padding:38px 0 34px;border-bottom:1px solid var(--line)}
+  .resumo p{font-size:1.12rem;line-height:1.7;max-width:74ch;margin:.55em 0 0}
+  @media(max-width:780px){.hero .wrap{grid-template-columns:1fr;padding:48px 22px}}
+  section{padding:62px 0;border-bottom:1px solid var(--line)}
+  section h2{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:800;letter-spacing:-.02em}
+  section .sub{color:var(--mut);margin:.6em 0 2em;max-width:62ch}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:820px){.g3,.g4{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h3{font-size:1.05rem;margin-bottom:.4em}
+  .card p{color:var(--mut);font-size:.92rem;margin:0}
+  .num{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px;background:rgba(250,204,21,.14);color:var(--amb);font-family:Sora;font-weight:800;font-size:.9rem;margin-bottom:.7em}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .flow span{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:.45em .9em;font-size:.85rem;font-family:Sora;font-weight:600}
+  .flow .arr{color:var(--amb);border:none;background:none;padding:0 .1em}
+  pre{background:#0a0a0e;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:.86rem;line-height:1.6;color:#d6d6e0}
+  pre .c{color:#6f6f7c} pre .k{color:var(--amb2)} pre .s{color:#9ece6a}
+  .step{display:grid;grid-template-columns:46px minmax(0,1fr);gap:16px;margin-bottom:26px}
+  .step>div,.card{min-width:0}
+  p code,li code,td code{overflow-wrap:anywhere}
+  .step .b{width:46px;height:46px;border-radius:12px;background:var(--amb);color:#1a1206;font-family:Sora;font-weight:800;font-size:1.25rem;display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:1.12rem;margin-bottom:.3em}
+  .step p{color:var(--mut);margin:.2em 0 .7em}
+  .ex{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.ex{grid-template-columns:1fr}}
+  .ex figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .ex figure img{width:100%;display:block}
+  .ex figcaption{padding:12px 14px;font-size:.88rem;color:var(--mut);background:var(--card)}
+  .phase{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .phase:last-child{border:none}
+  .phase .tag{flex:0 0 92px;font-family:Sora;font-weight:800;color:var(--amb)}
+  .phase .d strong{display:block;margin-bottom:.2em}
+  .phase .d span{color:var(--mut);font-size:.92rem}
+  footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}
+  .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="#top"><span class="emoji">💬</span> Sala Multiplayer</a>
+  <span class="sep">|</span>
+  <span class="clubpro">
+    <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
+    <span class="sep">-</span>
+    <a class="pro" href="https://inema.pro" target="_blank" rel="noopener">PRO</a>
+  </span>
+  <div class="links">
+    <a class="sec" href="#oque">What it is</a>
+    <a class="sec" href="#fluxo">How it works</a>
+    <a class="sec" href="#guia">User guide</a>
+    <a class="sec" href="#exemplos">Screens</a>
+    <a class="sec" href="#roadmap">Roadmap</a>
+    <span class="lang"><a href="../">PT</a><a class="on" href="./">EN</a><a href="../es/">ES</a></span>
+    <button class="tgl" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+    <a class="btn" href="https://github.com/inematds/sala-multiplayer" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div></nav>
+
+<header class="hero" id="top">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div>
+      <span class="chip">Multiplayer Agentic · v0.1</span>
+      <h1>People and AI agents in the same <span class="amb">room</span></h1>
+      <p class="lead">You, your team, Claude, Codex and whoever writes to your Telegram bot, all in one conversation, with a dashboard that shows everything live.</p>
+      <div class="cta">
+        <a class="btn" href="#guia">Start the guide</a>
+        <a class="btn ghost" href="https://github.com/inematds/sala-multiplayer" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+    <figure><img src="../assets/banner-en.jpg" alt="Sala Multiplayer banner: people, agents and Telegram in the same conversation"></figure>
+  </div>
+</header>
+
+<section id="resumo" class="resumo"><div class="wrap">
+  <span class="chip">In short</span>
+  <p>Sala Multiplayer is a small program that runs on your computer and puts you (or your team), two AI agents (Claude Code and Codex) and whoever writes to your Telegram bot into one conversation. It is for people who want to work with agents alongside other people, or to set up a support desk where the AI drafts and a human approves before the reply goes out. The agents run on your subscription, with no API. To use it, you need Node 24 and the Claude Code and Codex CLIs installed and logged in.</p>
+</div></section>
+
+<section id="oque"><div class="wrap">
+  <span class="chip">What it is</span>
+  <h2>One conversation, many participants</h2>
+  <p class="sub">First practical version of the <a href="https://inematds.github.io/multiplayer-agentic/guia/" target="_blank" rel="noopener">Multiplayer Agentic</a> concept: instead of each person talking to their own AI alone, everyone talks in the same place.</p>
+  <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/banner-grade-en.jpg" alt="Banner with the parts of the room: Room, Graph, Flow, Telegram, Approval and Profiles" style="width:100%;display:block"></figure>
+  <div class="grid g3">
+    <div class="card"><h3>👥 People and agents together</h3><p>Call <code>@claude</code> or <code>@codex</code> in the conversation. Both answer in the room, using your Claude Code and Codex subscriptions.</p></div>
+    <div class="card"><h3>📱 Telegram as the door</h3><p>A single bot receives the messages. The agents reply through it with their name in front ("Claude: ...").</p></div>
+    <div class="card"><h3>✅ Human in control</h3><p>In atendimento (support) mode, the reply to the customer becomes a draft and only goes out after someone on the team approves it.</p></div>
+  </div>
+</div></section>
+
+<section id="fluxo"><div class="wrap">
+  <span class="chip">How it works</span>
+  <h2>From Telegram to the dashboard, with a lock in the middle</h2>
+  <p class="sub">Every message enters the room, goes to whoever was called and shows up on the dashboard right away.</p>
+  <div class="flow">
+    <span>Message (Telegram or dashboard)</span><span class="arr">→</span>
+    <span>Route: @mention or profile default</span><span class="arr">→</span>
+    <span>Agent (Claude or Codex)</span><span class="arr">→</span>
+    <span>Tool, if requested</span><span class="arr">→</span>
+    <span>Human approval (atendimento)</span><span class="arr">→</span>
+    <span>Reply in the room and on Telegram</span>
+  </div>
+  <div class="grid g2" style="margin-top:26px">
+    <div class="card"><h3>Two ready-made profiles</h3><p><strong>pessoa</strong> (personal): you and your agents; the bot ignores anyone who is not the owner. <strong>atendimento</strong> (support): customers write on Telegram, Claude answers using the answer base, Codex reviews when the team asks, and a supervisor or agent approves.</p></div>
+    <div class="card"><h3>Tools</h3><p>The agent asks with one line <code>FERRAMENTA: nome | entrada</code> and the room runs it. Examples: <code>base</code> (answer base), <code>chamado</code> (ticket), <code>notas</code> (notes), <code>hora</code> (time).</p></div>
+    <div class="card"><h3>Loop limits</h3><p>Up to 4 turns in a row between agents (3 in atendimento) and a daily reply limit (150 in the pessoa profile, 300 in atendimento). Both keep you from wasting your subscription.</p></div>
+    <div class="card"><h3>Security</h3><p>The dashboard only opens on this machine (<code>127.0.0.1</code>). A message from another person is treated as data, never as an order. The agents run without the CLI's own tools, without MCP and in an empty folder.</p></div>
+  </div>
+</div></section>
+
+<section id="pre"><div class="wrap">
+  <span class="chip">Prerequisites</span>
+  <h2>What needs to be installed</h2>
+  <p class="sub">The demo runs on Node alone. For the real agents, both CLIs must be logged in to your account.</p>
+  <div class="grid g3">
+    <div class="card"><h3>Node 24</h3><p>The room uses the SQLite that already ships with Node (<code>node:sqlite</code>), with no dependencies to install.</p><pre><span class="c"># check the version</span>
+<span class="k">node</span> --version   <span class="c"># v24 or higher</span></pre></div>
+    <div class="card"><h3>Claude Code and Codex</h3><p>Installed and logged in with your subscription. The room calls both CLIs; it does not use an API key.</p><pre><span class="c"># both must respond</span>
+<span class="k">claude</span> --version
+<span class="k">codex</span> --version</pre></div>
+    <div class="card"><h3>Telegram bot (optional)</h3><p>Without a bot, the room works through the dashboard only. With a bot, you need the token from @BotFather.</p><pre><span class="c"># on Telegram</span>
+<span class="k">@BotFather</span> → /newbot</pre></div>
+  </div>
+</div></section>
+
+<section id="guia"><div class="wrap">
+  <span class="chip">User guide · step by step</span>
+  <h2>From the demo to a live bot</h2>
+  <p class="sub">Start with the demo, which uses fake agents and costs nothing. Then turn on the real agents and, last, Telegram.</p>
+
+  <div class="step"><div class="b">1</div><div>
+    <h3>Download the project</h3>
+    <p>There is no <code>npm install</code>: the project has no dependencies.</p>
+<pre><span class="k">git clone</span> <span class="s">https://github.com/inematds/sala-multiplayer</span>
+<span class="k">cd</span> sala-multiplayer</pre>
+  </div></div>
+
+  <div class="step"><div class="b">2</div><div>
+    <h3>Run the demo</h3>
+    <p>It opens the atendimento profile with fake agents, so you can see the three screens working.</p>
+<pre><span class="k">npm run demo</span>   <span class="c"># open http://127.0.0.1:4601</span>
+<span class="k">npm test</span>       <span class="c"># 11 tests, no agents or Telegram called</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">3</div><div>
+    <h3>Turn on the real agents</h3>
+    <p>Pick the profile. In the dashboard, write <code>@claude</code> or <code>@codex</code> to call an agent.</p>
+<pre><span class="k">npm run pessoa</span>        <span class="c"># you and your agents    → http://127.0.0.1:4600</span>
+<span class="k">npm run atendimento</span>   <span class="c"># support desk           → http://127.0.0.1:4600</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">4</div><div>
+    <h3>Create the Telegram bot</h3>
+    <p>In @BotFather, create the bot and copy the token. For the bot to read group messages, turn privacy off.</p>
+<pre><span class="k">/newbot</span>       <span class="c"># pick a name and copy the token</span>
+<span class="k">/setprivacy</span>   <span class="c"># pick the bot → Disable</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">5</div><div>
+    <h3>Fill in the .env</h3>
+    <p>The <code>.env</code> stays out of git. Find your numeric id with @userinfobot. In atendimento, also fill in the supervisor and agent ids.</p>
+<pre><span class="k">cp</span> .env.exemplo .env
+<span class="c"># SALA_TELEGRAM_TOKEN=      token from @BotFather</span>
+<span class="c"># SALA_DONO_TELEGRAM_ID=    your id</span>
+<span class="c"># SALA_SUPERVISOR_TELEGRAM_ID= / SALA_ATENDENTE_TELEGRAM_ID=  (atendimento)</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">6</div><div>
+    <h3>Everyone sends /start</h3>
+    <p>A Telegram bot cannot start a conversation. Without <code>/start</code>, it cannot notify people about approvals. Then run the profile again: the Telegram badge at the top of the dashboard shows "on".</p>
+<pre><span class="k">/start</span>                <span class="c"># each team member, once</span>
+<span class="k">npm run atendimento</span>   <span class="c"># or npm run pessoa</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">7</div><div>
+    <h3>Approve the replies</h3>
+    <p>In atendimento, the draft appears at the top of the dashboard. Approve it there (you can edit it first) or on Telegram.</p>
+<pre><span class="k">/aprovar</span> 3   <span class="c"># sends draft 3 to the customer</span>
+<span class="k">/recusar</span> 3   <span class="c"># discards draft 3</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">8</div><div>
+    <h3>Create your own desk</h3>
+    <p>The profiles in <code>perfis/</code> define who takes part, each agent's personality, the tools, the default route, who approves and the limits. Copy one and run it with the new name.</p>
+<pre><span class="k">cp</span> perfis/atendimento.json perfis/vendas.json
+<span class="k">node</span> server.mjs --perfil vendas</pre>
+  </div></div>
+</div></section>
+
+<section id="exemplos"><div class="wrap">
+  <span class="chip">Screens</span>
+  <h2>The dashboard's three screens</h2>
+  <p class="sub">Everything updates live, with no reload. The screens fit without scrolling from 360 to 1920 px wide.</p>
+  <div class="ex">
+    <figure><img src="../assets/sala.jpg" alt="Room screen: indicators on top, participants on the left and chat on the right"><figcaption><strong>Room</strong> (<code>/</code>): on top, messages from the last hour, agents working, pending approvals and replies today. On the left, the participants; click to filter. On the right, the chat.</figcaption></figure>
+    <figure><img src="../assets/grafo.jpg" alt="Graph screen: participants connected by lines"><figcaption><strong>Graph</strong> (<code>/grafo</code>): who talks to whom. The line gets thicker with volume and a dot runs along it with each message.</figcaption></figure>
+    <figure><img src="../assets/fluxo.jpg" alt="Flow screen: list of events in order"><figcaption><strong>Flow</strong> (<code>/fluxo</code>): everything that comes in and goes out, scrolling in the order it happens.</figcaption></figure>
+    <figure><img src="../assets/sala-celular.jpg" alt="Room screen on a phone" style="max-height:534px;object-fit:contain;background:var(--card)"><figcaption><strong>On a phone</strong>: the same Room at 360 px wide.</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="roadmap"><div class="wrap">
+  <span class="chip">Roadmap</span>
+  <h2>Next steps</h2>
+  <p class="sub">v0.1 is published. What comes next:</p>
+  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>This version</strong><span>Telegram and the dashboard chat as inputs; Claude Code and Codex on your subscription; example tools; Room, Graph and Flow; limits and human approval; pessoa and atendimento profiles.</span></div></div>
+  <div class="phase"><div class="tag">v0.2</div><div class="d"><strong>Councils in the room</strong><span>The councils from <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> join as participants: <code>@conselho-gestao</code> convenes the council and returns the summary. Also simple per-person login and searchable history per customer.</span></div></div>
+  <div class="phase"><div class="tag">Later</div><div class="d"><strong>More inputs and measurement</strong><span>Email as a third input; subscription cost and usage per person and per agent.</span></div></div>
+</div></section>
+
+<footer>
+  <div class="wrap">
+    <div class="pill">Node 24</div><div class="pill">Native SQLite</div><div class="pill">Claude Code + Codex</div><div class="pill">Telegram</div>
+    <p style="margin-top:18px">Sala Multiplayer · MIT license ·
+      <a href="https://github.com/inematds/sala-multiplayer">inematds/sala-multiplayer</a> ·
+      <a href="https://inema.club">INEMA.CLUB</a></p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var KEY='sala-multiplayer-theme';
+    var b=document.body, t=document.getElementById('themeToggle');
+    if(localStorage.getItem(KEY)==='light'){ b.classList.add('light'); t.textContent='☀️'; }
+    t.addEventListener('click',function(){
+      var light=b.classList.toggle('light');
+      t.textContent=light?'☀️':'🌙';
+      localStorage.setItem(KEY, light?'light':'dark');
+    });
+  })();
+</script>
+</body>
+</html>

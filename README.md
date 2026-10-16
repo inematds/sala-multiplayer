@@ -1,12 +1,20 @@
 # Sala multiplayer
 
+[![Sala Multiplayer](guia/assets/banner.jpg)](https://inematds.github.io/sala-multiplayer/guia/)
+
+**🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
+
 Pessoas, agentes de IA (Claude Code e Codex) e o Telegram conversando na mesma sala, com um painel que mostra tudo ao vivo.
 
 ## O que é
 
-É um programa pequeno que roda no seu computador e junta numa conversa só você (ou sua equipe), dois agentes de IA e quem escreve para o seu bot do Telegram. Tem dois modos prontos: **pessoa** (você e seus agentes) e **atendimento** (um setor que atende clientes pelo Telegram, com um humano aprovando cada resposta antes de ela sair). Os agentes rodam pela sua assinatura do Claude Code e do Codex, sem API. Para usar, precisa de Node 24 e dos dois CLIs instalados e logados.
+A Sala Multiplayer é um programa pequeno que roda no seu computador e junta numa conversa só você (ou sua equipe), dois agentes de IA (Claude Code e Codex) e quem escreve para o seu bot do Telegram. Serve para quem quer trabalhar com agentes junto de outras pessoas, ou montar um atendimento em que a IA rascunha e um humano aprova antes de a resposta sair. Os agentes rodam pela sua assinatura, sem API. Para usar, você precisa de Node 24 e dos CLIs do Claude Code e do Codex instalados e logados.
 
-É a primeira versão prática do conceito [Multiplayer Agentic](https://inematds.github.io/multiplayer-agentic/guia/).
+Tem dois modos prontos: **pessoa** (você e seus agentes) e **atendimento** (um setor que atende clientes pelo Telegram, com um humano aprovando cada resposta antes de ela sair). É a primeira versão prática do conceito [Multiplayer Agentic](https://inematds.github.io/multiplayer-agentic/guia/).
+
+## 📖 Guia de uso
+
+Guia completo (landing + passo a passo): **https://inematds.github.io/sala-multiplayer/guia/**
 
 ## As três telas
 
