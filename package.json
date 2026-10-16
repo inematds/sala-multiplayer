@@ -1,6 +1,6 @@
 {
   "name": "sala-multiplayer",
-  "version": "0.12.4",
+  "version": "0.12.5",
   "description": "Pessoas, agentes de IA (Claude e Codex) e Telegram na mesma sala, com painel ao vivo.",
   "type": "module",
   "private": true,

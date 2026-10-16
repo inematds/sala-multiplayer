@@ -240,6 +240,7 @@ const servidor = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/estado') return json(res, estado(eu));
     if (req.method === 'GET' && url.pathname === '/api/stream') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
+      res.write(': ok\n\n'); // manda o cabeçalho já: sem isso a conexão só abre no primeiro ping (25 s)
       const manda = (tipo) => (d) => {
         res.write(`event: ${tipo}\ndata: ${JSON.stringify(d)}\n\n`);
         if (tipo !== 'stats') res.write(`event: stats\ndata: ${JSON.stringify(banco.stats())}\n\n`);
