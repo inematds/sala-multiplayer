@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sala multiplayer · Configuração</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<main class="cfg">
+  <h2>Configuração da sala</h2>
+  <p class="aviso">Só o dono muda estes limites: aqui, com a senha do dono (<code>SALA_DONO_SENHA</code> no <code>.env</code>), ou no Telegram com <code>/config</code>. Quem não é o dono pede no chat ("aumenta o teto para 20"): o agente monta a proposta e o dono aprova.</p>
+  <form id="f">
+    <section class="bloco"><h3>Sala</h3><div id="sala" class="campos"></div></section>
+    <section class="bloco"><h3>Agentes</h3><div id="agentes"></div></section>
+    <section class="bloco salvar">
+      <label>Senha do dono <input id="senha" type="password" autocomplete="current-password"></label>
+      <button class="btn pri" type="submit">Salvar mudanças</button>
+      <span id="msg" role="status"></span>
+    </section>
+  </form>
+</main>
+<script type="module">
+import { iniciar, nav, esc } from '/comum.js';
+const $ = (id) => document.getElementById(id);
+await iniciar((tipo) => { if (tipo === 'config') carregar(); });
+nav('config');
+let C;
+const NIVEL = { super: 'super (o mais forte)', topo: 'topo', executor: 'executor (padrão)', menor: 'menor (rápido)' };
+
+function campo(nome, def, valor, motor) {
+  if (def.tipo === 'inteiro') return `<label>${esc(def.rotulo)} <input data-c="${nome}" type="number" min="${def.min}" max="${def.max}" value="${valor ?? ''}" placeholder="padrão"></label>`;
+  const opc = def.opcoes.map((o) => {
+    const txt = nome.endsWith('.nivel') ? `${NIVEL[o]} · ${C.niveis?.[o]?.[motor]?.modelo || 'padrão do CLI'}` : (o || 'do nível');
+    return `<option value="${o}" ${o === (valor ?? '') ? 'selected' : ''}>${esc(txt)}</option>`;
+  }).join('');
+  return `<label>${esc(def.rotulo)} <select data-c="${nome}">${opc}</select></label>`;
+}
+
+async function carregar() {
+  C = await (await fetch('/api/config')).json();
+  $('sala').innerHTML = Object.entries(C.campos_sala).map(([k, d]) => campo(k, d, C[k])).join('');
+  $('agentes').innerHTML = C.agentes.map((a) => `<div class="ag"><b>@${esc(a.id)}</b> <span class="mut">${esc(a.nome)} · ${a.motor === 'codex' ? 'Codex' : 'Claude Code'}</span>
+    <div class="campos">${Object.entries(C.campos_agente).map(([k, d]) => campo(`agente.${a.id}.${k}`, d, a[k], a.motor)).join('')}</div></div>`).join('');
+  document.querySelectorAll('[data-c]').forEach((el) => { el.dataset.orig = el.value; });
+  if (!C.senha_definida) $('msg').textContent = 'SALA_DONO_SENHA está vazia no .env: pelo painel nada muda.';
+}
+
+$('f').onsubmit = async (e) => {
+  e.preventDefault();
+  const mudancas = {};
+  document.querySelectorAll('[data-c]').forEach((el) => {
+    if (el.value === el.dataset.orig) return;
+    if (el.type === 'number' && el.value === '') return;
+    mudancas[el.dataset.c] = el.type === 'number' ? Number(el.value) : el.value;
+  });
+  if (!Object.keys(mudancas).length) { $('msg').textContent = 'Nada mudou.'; return; }
+  const r = await (await fetch('/api/config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ senha: $('senha').value, mudancas }) })).json();
+  $('msg').textContent = r.erro ? `Não salvou: ${r.erro}` : `Salvo: ${Object.keys(r.mudou).join(', ')}.`;
+  $('msg').className = r.erro ? 'ruim' : 'bom';
+  if (!r.erro) carregar();
+};
+await carregar();
+</script>
+</body>
+</html>

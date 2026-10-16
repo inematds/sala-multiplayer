@@ -19,6 +19,7 @@
   "aprovar_para": ["cliente"],
   "linhas_max": 8,
   "propor_agentes": ["claude"],
+  "dono": "supervisor",
   "aprovadores": ["supervisor", "atendente"],
   "teto_turnos": 6,
   "teto_diario": 300,

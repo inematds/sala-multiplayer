@@ -77,6 +77,14 @@ function infoAgente(id) {
   const g = S.estado.agentes?.find((x) => x.id === id);
   return g ? ` · ${modeloDe(g.motor, g.nivel)}${g.esforco ? ' ' + g.esforco : ''}` : '';
 }
+function cartaoConfig(a) {
+  return `<div class="ap" data-id="${a.id}">
+    <div class="q">#${a.id} · ${esc(part(a.de).nome)} propõe mudar a configuração · pedido de ${esc(part(a.para).nome)} · ${hora(a.hora)}</div>
+    <div class="prop">${esc(a.texto)}</div>
+    <label class="senha">Só o dono decide. Senha do dono <input type="password" data-senha autocomplete="current-password"></label>
+    <div class="acoes"><button class="btn pri" data-a="aprovar">Aprovar mudança</button><button class="btn" data-a="recusar">Recusar</button></div>
+  </div>`;
+}
 function cartaoAgente(a) {
   const g = a.dados.agente, est = a.dados.estimativa;
   const linha = (r, v) => v ? `<div><span class="r">${r}</span> ${esc(v)}</div>` : '';
@@ -112,7 +120,7 @@ function render() {
   const lista = $('aprov-lista');
   const emEdicao = lista.contains(document.activeElement);
   if (!emEdicao) {
-    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => a.tipo === 'agente' ? cartaoAgente(a) : `
+    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => a.tipo === 'agente' ? cartaoAgente(a) : a.tipo === 'config' ? cartaoConfig(a) : `
       <div class="ap" data-id="${a.id}">
         <div class="q">#${a.id} · ${esc(part(a.de).nome)} → ${esc(part(a.para).nome)} · ${esc(nomeConversa(a.conversa))} · ${hora(a.hora)}</div>
         <textarea aria-label="texto da resposta">${esc(a.texto)}</textarea>
@@ -122,7 +130,7 @@ function render() {
       const box = b.closest('.ap');
       b.disabled = true;
       const ajustes = box.querySelector('.ajustes') ? Object.fromEntries([...box.querySelectorAll('.ajustes [data-k]')].map((c) => [c.dataset.k, c.type === 'number' ? Number(c.value) : c.value])) : undefined;
-      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea')?.value, ajustes });
+      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea')?.value, ajustes, senha: box.querySelector('[data-senha]')?.value });
       if (r.erro) { b.disabled = false; alertaInline(box, r.erro); }
     });
   }

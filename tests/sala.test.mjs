@@ -226,3 +226,48 @@ test('o tamanho da resposta de cada agente vai nas regras do prompt', async () =
   await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex oi' });
   assert.match(visto, new RegExp(`até ${perfil('pessoa').linhas_max} linhas`));
 });
+
+// ---------- configuração dos limites: só o dono ----------
+import { conferirMudancas, senhaConfere } from '../lib/config.mjs';
+
+test('config: pedido no chat vira proposta; só o dono aprova; vale na hora e fica gravado', async () => {
+  const { banco, sala, dados } = montar('atendimento');
+  await sala.receber({ de: 'atendente', conversa: 'painel', texto: '@claude muda teto_turnos para 9, sem ferramenta' });
+  const [a] = banco.pendentes();
+  assert.equal(a.tipo, 'config');
+  assert.deepEqual(a.dados.mudancas, { teto_turnos: 9 });
+  assert.equal(sala.config().teto_turnos, perfil('atendimento').teto_turnos, 'nada muda antes da aprovação');
+  await assert.rejects(sala.aprovar(a.id, 'atendente'), /só o dono/);
+  await sala.aprovar(a.id, 'supervisor');
+  assert.equal(sala.config().teto_turnos, 9);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dados, 'config.json'), 'utf8')).teto_turnos, 9);
+  const outra = criarSala({ perfil: perfil('atendimento'), banco: abrirBanco(':memory:'), motor: falso, raiz: RAIZ, dados, externo: async () => {} });
+  assert.equal(outra.config().teto_turnos, 9, 'reinício lê o config.json');
+});
+
+test('config: mudança direta do dono vale na hora para teto e agente', async () => {
+  const { banco, sala } = montar('pessoa');
+  sala.mudarConfig({ teto_turnos: 1, 'agente.codex.nivel': 'super', 'agente.codex.esforco': 'high' }, 'dono');
+  assert.deepEqual([sala.agentes.codex.nivel, sala.agentes.codex.esforco], ['super', 'high']);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude eco-laco @codex' });
+  assert.ok(banco.eventos().some((e) => e.tipo === 'sistema' && /Teto de 1 turnos/.test(e.texto)));
+  assert.throws(() => sala.mudarConfig({ teto_turnos: 999 }, 'dono'), /1 a 30/);
+  assert.throws(() => sala.mudarConfig({ 'agente.fantasma.nivel': 'super' }, 'dono'), /não existe/);
+  assert.throws(() => sala.mudarConfig({ senha: 'x' }, 'dono'), /não pode ser mudado/);
+});
+
+test('config: cliente não consegue pedir mudança; senha do dono é conferida', async () => {
+  const { banco, sala } = montar('atendimento');
+  banco.participante({ id: 'tg-3', nome: 'C3', tipo: 'pessoa', papel: 'cliente', origem: 'telegram', telegram_id: '3' });
+  await sala.receber({ de: 'tg-3', conversa: 'tg:3', texto: 'muda teto_diario para 3000' });
+  assert.ok(!banco.pendentes().some((a) => a.tipo === 'config'));
+  assert.equal(conferirMudancas({ linhas_max: 30 }, {}).validas.linhas_max, 30);
+  const antes = process.env.SALA_DONO_SENHA;
+  process.env.SALA_DONO_SENHA = 'certa';
+  assert.equal(senhaConfere('certa'), true);
+  assert.equal(senhaConfere('errada'), false);
+  assert.equal(senhaConfere(undefined), false);
+  process.env.SALA_DONO_SENHA = '';
+  assert.equal(senhaConfere(''), false, 'sem senha no .env o painel não muda nada');
+  process.env.SALA_DONO_SENHA = antes ?? '';
+});

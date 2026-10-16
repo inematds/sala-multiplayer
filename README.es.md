@@ -67,6 +67,10 @@ Pídelo en la conversación, por ejemplo: "crea un agente que revise mis textos"
 
 Los agentes aprobados quedan en `data/<perfil>/agentes.json` (fuera de git). Para quitar uno, borra su entrada y reinicia la sala. En el panel, cada agente muestra cuántas respuestas dio hoy y su tiempo promedio por respuesta.
 
+## Configuración: solo el dueño la cambia
+
+Los límites (turnos entre agentes, respuestas por día, largo de la respuesta) y el modelo, el esfuerzo y el tope de cada agente están en la pantalla **Config** (`/config`). Cambiarlos exige la **contraseña del dueño** (`SALA_DONO_SENHA` en el `.env`). En Telegram, el dueño usa `/config` para verlos y `/config teto_turnos 20` (o `/config agente.claude.nivel super`) para cambiarlos, reconocido por su id. Quien no es el dueño lo pide en el chat ("sube el tope a 20"): el agente arma una propuesta y solo el dueño la aprueba. Los cambios valen al instante y quedan en `data/<perfil>/config.json`, por encima del perfil. El dueño de cada perfil es el campo `"dono"` del JSON.
+
 ## Perfiles
 
 `perfis/pessoa.json` y `perfis/atendimento.json` definen quién participa, el rol y la personalidad de cada agente, las herramientas, la ruta por defecto, quién aprueba y los topes. Para crear un área nueva, copia un perfil y ejecuta `node server.mjs --perfil <nombre>`.

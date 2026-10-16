@@ -42,6 +42,7 @@ export function nav(ativa) {
       <a href="/" class="${ativa === 'sala' ? 'on' : ''}">Sala</a>
       <a href="/grafo" class="${ativa === 'grafo' ? 'on' : ''}">Grafo</a>
       <a href="/fluxo" class="${ativa === 'fluxo' ? 'on' : ''}">Fluxo</a>
+      <a href="/config" class="${ativa === 'config' ? 'on' : ''}">Config</a>
     </div>
     <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
     <button class="tema" aria-label="tema claro ou escuro">${document.body.classList.contains('light') ? '☀️' : '🌙'}</button>`;
@@ -74,6 +75,7 @@ export async function iniciar(aoMudar) {
     if (d.estado === 'pendente') S.estado.pendentes.push(d);
   });
   on('ativos', (d) => { S.estado.ativos = d; });
+  on('config', (d) => { S.estado.config = d; S.estado.perfil.teto_turnos = d.teto_turnos; S.estado.perfil.teto_diario = d.teto_diario; });
   on('stats', (d) => { S.estado.stats = d; });
   return S.estado;
 }

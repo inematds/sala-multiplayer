@@ -17,6 +17,7 @@
   "aprovar_para": [],
   "linhas_max": 20,
   "propor_agentes": ["claude"],
+  "dono": "dono",
   "aprovadores": ["dono"],
   "teto_turnos": 10,
   "teto_diario": 400,

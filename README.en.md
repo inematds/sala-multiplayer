@@ -67,6 +67,10 @@ Ask in the conversation, for example: "create an agent that proofreads my texts"
 
 Approved agents are kept in `data/<perfil>/agentes.json` (outside git). To remove one, delete its entry and restart the room. In the panel, each agent shows how many replies it gave today and its average time per reply.
 
+## Settings: only the owner changes them
+
+The limits (turns between agents, replies per day, reply length) and each agent's model, effort and cap live on the **Config** page (`/config`). Changing them needs the **owner password** (`SALA_DONO_SENHA` in `.env`). On Telegram, the owner uses `/config` to see them and `/config teto_turnos 20` (or `/config agente.claude.nivel super`) to change them, recognized by their Telegram id. Anyone else asks in the chat ("raise the cap to 20"): the agent builds a proposal and only the owner approves it. Changes apply at once and are stored in `data/<perfil>/config.json`, on top of the profile. Each profile's owner is the `"dono"` field in its JSON.
+
 ## Profiles
 
 `perfis/pessoa.json` and `perfis/atendimento.json` define who takes part, each agent's role and personality, the tools, the default route, who approves and the limits. To create a new desk, copy a profile and run `node server.mjs --perfil <name>`.

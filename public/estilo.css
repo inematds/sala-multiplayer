@@ -140,3 +140,22 @@ select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border
 .ap .ajustes label{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
 .ap .ajustes select,.ap .ajustes input{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;max-width:100%}
 .ap .ajustes input{width:64px}
+/* Configuração (só o dono muda) */
+body:has(.cfg){height:auto;overflow:auto}
+.cfg{max-width:980px;margin:0 auto;padding:18px 16px 40px}
+.cfg h2{font-family:Sora,sans-serif;margin:6px 0 8px}
+.cfg .aviso{color:var(--mut);font-size:.92rem;max-width:74ch}
+.cfg .bloco{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:14px}
+.cfg h3{font-family:Sora,sans-serif;font-size:1rem;margin:0 0 10px}
+.cfg .campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 16px}
+.cfg label{display:grid;gap:4px;font-size:.86rem;color:var(--mut);min-width:0}
+.cfg input,.cfg select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;width:100%;min-width:0}
+.cfg .ag{border-top:1px solid var(--line);padding:12px 0}
+.cfg .ag:first-child{border-top:0;padding-top:0}
+.cfg .ag .campos{margin-top:8px}
+.cfg .mut{color:var(--mut);font-size:.88rem}
+.cfg .salvar{display:flex;flex-wrap:wrap;align-items:end;gap:12px}
+.cfg .salvar label{flex:1 1 220px}
+.cfg #msg{font-size:.9rem}.cfg #msg.ruim{color:var(--bad)}.cfg #msg.bom{color:var(--ok)}
+.ap .senha{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--mut);flex-wrap:wrap}
+.ap .senha input{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;max-width:180px}

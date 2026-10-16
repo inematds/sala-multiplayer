@@ -9,6 +9,7 @@ import { criarSala } from './lib/sala.mjs';
 import { criarTelegram } from './lib/telegram.mjs';
 import { claude, codex, falso } from './lib/agentes.mjs';
 import { lerModelos, lerNiveis } from './lib/modelos.mjs';
+import { CAMPOS_SALA, CAMPOS_AGENTE, senhaConfere } from './lib/config.mjs';
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i < 0 ? d : (process.argv[i + 1]?.startsWith('--') || i + 1 >= process.argv.length ? true : process.argv[i + 1]); };
@@ -59,10 +60,26 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
   tg = criarTelegram({
     token: process.env.SALA_TELEGRAM_TOKEN, banco, perfil,
     aoReceber: (m) => sala.receber(m),
-    async aoComando({ quem, acao, id, conversa }) {
-      if (!(perfil.aprovadores || []).includes(quem.papel)) return;
-      const r = acao === 'aprovar' ? await sala.aprovar(id, quem.id) : sala.recusar(id, quem.id);
-      const feito = acao === 'recusar' ? 'recusada' : r?.tipo === 'agente' ? `aprovada: agente @${r.dados.agente.id} criado` : 'aprovada e enviada';
+    async aoComando({ quem, acao, id, conversa, args }) {
+      if (acao === 'config') {
+        // Só o dono, reconhecido pelo id do Telegram. "/config" mostra; "/config campo valor" muda.
+        if (quem.id !== sala.dono) return tg.enviar(conversa, 'Só o dono da sala mexe na configuração. Peça a mudança no chat: o agente monta a proposta e o dono aprova.');
+        if (!args) {
+          const c = sala.config();
+          return tg.enviar(conversa, [`Configuração (${perfil.nome})`, `teto_turnos ${c.teto_turnos}`, `teto_diario ${c.teto_diario}`, `linhas_max ${c.linhas_max}`,
+            ...c.agentes.map((a) => `@${a.id}: nivel ${a.nivel}, esforco ${a.esforco || '(do nível)'}, linhas_max ${a.linhas_max ?? '(padrão)'}, teto_diario ${a.teto_diario ?? '(sala)'}`),
+            'Mudar: /config teto_turnos 20  ou  /config agente.claude.nivel super'].join('\n'));
+        }
+        const [campo, ...resto] = args.split(/\s+/);
+        try { sala.mudarConfig({ [campo]: resto.join(' ').replace(/^(vazio|padrao|padrão)$/i, '') }, quem.id, conversa); await tg.enviar(conversa, `Feito: ${campo} = ${resto.join(' ') || '(padrão)'}.`); }
+        catch (e) { await tg.enviar(conversa, `Não mudei: ${e.message}`); }
+        return;
+      }
+      if (!(perfil.aprovadores || []).includes(quem.papel) && quem.id !== sala.dono) return;
+      let r;
+      try { r = acao === 'aprovar' ? await sala.aprovar(id, quem.id) : sala.recusar(id, quem.id); }
+      catch (e) { return tg.enviar(conversa, `#${id}: ${e.message}.`); }
+      const feito = acao === 'recusar' ? 'recusada' : r?.tipo === 'agente' ? `aprovada: agente @${r.dados.agente.id} criado` : r?.tipo === 'config' ? 'aprovada: configuração mudada' : 'aprovada e enviada';
       await tg.enviar(conversa, r ? `#${id} ${feito}.` : `#${id} não está pendente.`);
     },
   });
@@ -73,7 +90,7 @@ if (process.env.SALA_TELEGRAM_TOKEN && !usarFalso) {
 
 // ---------- HTTP ----------
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg' };
-const PAGINAS = { '/': 'sala.html', '/sala': 'sala.html', '/grafo': 'grafo.html', '/fluxo': 'fluxo.html' };
+const PAGINAS = { '/': 'sala.html', '/sala': 'sala.html', '/grafo': 'grafo.html', '/fluxo': 'fluxo.html', '/config': 'config.html' };
 
 const json = (res, obj, code = 200) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
 const corpo = (req) => new Promise((ok, falha) => {
@@ -89,7 +106,7 @@ function estado() {
     participantes: banco.participantes(), eventos: banco.eventos(400), pendentes: banco.pendentes(),
     stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
     agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, nivel: a.nivel || 'executor', esforco: a.esforco || '', linhas_max: a.linhas_max || perfil.linhas_max || 6, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
-    niveis,
+    niveis, config: sala.config(),
   };
 }
 
@@ -103,7 +120,7 @@ const servidor = http.createServer(async (req, res) => {
         res.write(`event: ${tipo}\ndata: ${JSON.stringify(d)}\n\n`);
         if (tipo !== 'stats') res.write(`event: stats\ndata: ${JSON.stringify(banco.stats())}\n\n`);
       };
-      const ouvintes = ['evento', 'participante', 'aprovacao', 'ativos'].map((t) => [t, manda(t)]);
+      const ouvintes = ['evento', 'participante', 'aprovacao', 'ativos', 'config'].map((t) => [t, manda(t)]);
       for (const [t, f] of ouvintes) banco.bus.on(t, f);
       const ping = setInterval(() => res.write(': ping\n\n'), 25000);
       req.on('close', () => { clearInterval(ping); for (const [t, f] of ouvintes) banco.bus.off(t, f); });
@@ -115,10 +132,23 @@ const servidor = http.createServer(async (req, res) => {
       sala.receber({ de: b.de, conversa: b.conversa || 'painel', texto: b.texto.trim() }).catch((e) => console.log(e));
       return json(res, { ok: true });
     }
+    if (req.method === 'GET' && url.pathname === '/api/config') {
+      return json(res, { ...sala.config(), campos_sala: CAMPOS_SALA, campos_agente: CAMPOS_AGENTE, niveis, senha_definida: Boolean(process.env.SALA_DONO_SENHA) });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/config') {
+      const b = await corpo(req);
+      if (!senhaConfere(b.senha)) return json(res, { erro: 'senha do dono errada (ou SALA_DONO_SENHA vazia no .env)' }, 403);
+      try { return json(res, { ok: true, mudou: sala.mudarConfig(b.mudancas, sala.dono) }); }
+      catch (e) { return json(res, { erro: e.message }, 400); }
+    }
     if (req.method === 'POST' && (url.pathname === '/api/aprovar' || url.pathname === '/api/recusar')) {
       const b = await corpo(req);
       const quem = (perfil.pessoas || []).find((p) => p.id === b.de);
-      if (!quem || !(perfil.aprovadores || []).includes(quem.papel)) return json(res, { erro: 'sem permissão para aprovar' }, 403);
+      // Mudança de configuração: só o dono, com a senha (o "Você é" do painel não prova quem é).
+      if (banco.aprovacao(Number(b.id))?.tipo === 'config') {
+        if (!senhaConfere(b.senha)) return json(res, { erro: 'mudança de configuração: só o dono aprova ou recusa, com a senha' }, 403);
+        b.de = sala.dono;
+      } else if (!quem || !(perfil.aprovadores || []).includes(quem.papel)) return json(res, { erro: 'sem permissão para aprovar' }, 403);
       let r;
       try { r = url.pathname === '/api/aprovar' ? await sala.aprovar(Number(b.id), b.de, b.texto, b.ajustes) : sala.recusar(Number(b.id), b.de); }
       catch (e) { return json(res, { erro: e.message }, 400); }
