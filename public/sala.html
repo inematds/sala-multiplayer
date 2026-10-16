@@ -16,6 +16,10 @@
 </section>
 <section class="aprov" id="aprov"><h3>Esperando aprovação humana</h3><div id="aprov-lista"></div></section>
 <main class="sala">
+  <div class="abas-movel" role="group" aria-label="ver">
+    <button class="tab on" data-aba="conversa">Conversa</button>
+    <button class="tab" data-aba="topicos">Tópicos <span id="n-top"></span></button>
+  </div>
   <aside class="lado">
     <div class="tabs" id="tabs">
       <button class="tab on" data-t="todos">Todos</button>
@@ -30,6 +34,7 @@
       <select id="conversa" aria-label="conversa"></select>
       <span class="filtro" id="filtro"></span>
     </div>
+    <div class="resumo-top" id="resumo" hidden></div>
     <div class="msgs" id="msgs"></div>
     <div class="dica" id="dica"></div>
     <form class="comp" id="comp">
@@ -38,11 +43,14 @@
       <button class="btn pri" type="submit">Enviar</button>
     </form>
   </section>
+  <aside class="topicos" id="topicos" aria-label="tópicos"></aside>
 </main>
 <script type="module">
 import { S, iniciar, nav, icone, esc, hora, part, classe, nomeConversa, postar, ROTULO } from '/comum.js';
+import { rodadas, resolucao } from '/rodadas.js';
 
 let aba = 'todos', sel = new URLSearchParams(location.search).get('p'), conversa = 'todas';
+let selTop = Number(new URLSearchParams(location.search).get('t')) || null;
 const $ = (id) => document.getElementById(id);
 let eu = (() => { try { return localStorage.getItem('sala-eu'); } catch { return null; } })();
 
@@ -55,6 +63,8 @@ $('eu').onchange = (e) => { eu = e.target.value; try { localStorage.setItem('sal
 document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { aba = b.dataset.t; document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b)); render(); });
 $('conversa').onchange = (e) => { conversa = e.target.value; render(); };
 $('k-aprov-box').onclick = () => $('aprov').classList.toggle('aberta');
+const verAba = (a) => { document.body.classList.toggle('aba-topicos', a === 'topicos'); document.querySelectorAll('.abas-movel .tab').forEach((b) => b.classList.toggle('on', b.dataset.aba === a)); };
+document.querySelectorAll('.abas-movel .tab').forEach((b) => b.onclick = () => verAba(b.dataset.aba));
 $('texto').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('comp').requestSubmit(); } });
 $('comp').onsubmit = async (e) => {
   e.preventDefault();
@@ -162,10 +172,12 @@ function render() {
   // mensagens
   const box = $('msgs');
   const noFim = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  const evs = e.eventos.filter((x) => (conversa === 'todas' || x.conversa === conversa) && (!sel || x.de === sel || x.para === sel)).slice(-250);
+  const top = selTop && e.topicos.find((t) => t.id === selTop);
+  const rodTop = top ? new Set(top.rodadas) : null;
+  const evs = e.eventos.filter((x) => (conversa === 'todas' || x.conversa === conversa) && (!sel || x.de === sel || x.para === sel) && (!rodTop || rodTop.has(x.rodada))).slice(-250);
   box.innerHTML = evs.map((x) => {
     const de = part(x.de), para = part(x.para), c = classe(de);
-    const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, proposta: `proposta de agente · aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso', pedido: `pedido de entrada · #${x.meta?.aprovacao ?? ''}` }[x.tipo];
+    const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, proposta: `proposta de agente · aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso', topico: 'tópico', pedido: `pedido de entrada · #${x.meta?.aprovacao ?? ''}` }[x.tipo];
     const eco = x.meta?.eco;
     return `<div class="m ${x.tipo} ${x.de === eu ? 'meu' : ''} ${eco ? 'eco' : ''}">
       <div class="c"><span class="t-${c}">${icone(c)}</span><b>${esc(de.nome)}</b>${x.para && x.para !== 'sala' ? ` → ${esc(para.nome)}` : ''} · ${hora(x.hora)}
@@ -173,6 +185,74 @@ function render() {
       <div class="x">${esc(x.texto)}</div>${x.meta?.ms && x.tipo !== 'rascunho' ? `<div class="tempo">${Math.round(x.meta.ms / 100) / 10}s</div>` : ''}</div>`;
   }).join('') || '<div class="pa">Sem mensagens ainda. Escreva abaixo ou mande algo para o bot no Telegram.</div>';
   if (noFim) box.scrollTop = box.scrollHeight;
+  topicos();
+}
+
+// ---------- Tópicos: lista à direita e resumo no alto do chat ----------
+const ESTADO_TXT = { 'em debate': 'em debate', decidido: 'decidido', parado: 'parado' };
+function estadoDe(t, rs) {
+  if (t.rodadas.some((id) => rs.get(String(id)) && resolucao(rs.get(String(id)), S.estado).pendentes.length)) return 'em debate';
+  if (t.estado === 'em debate' && Date.now() - Date.parse(t.atualizado) > 2 * 3600e3) return 'parado';
+  return t.estado;
+}
+function somar(t, rs) {
+  const out = { respostas: 0, ms: 0, ecos: 0, decidido: [], pendentes: [], gente: new Set(), msgs: 0 };
+  for (const id of t.rodadas) {
+    const r = rs.get(String(id));
+    if (!r) continue;
+    const x = resolucao(r, S.estado);
+    out.respostas += x.respostas; out.ms += x.ms; out.ecos += x.ecos;
+    out.decidido.push(...x.decidido); out.pendentes.push(...x.pendentes);
+    for (const ev of r.eventos) {
+      if (['pessoa', 'agente'].includes(part(ev.de).tipo) && ev.tipo !== 'topico') out.gente.add(ev.de);
+      if (ev.tipo === 'mensagem' || ev.tipo === 'resposta') out.msgs++;
+    }
+  }
+  return out;
+}
+function itemTopico(t, rs) {
+  const est = estadoDe(t, rs), so = somar(t, rs);
+  return `<button class="top ${selTop === t.id ? 'on' : ''}" data-top="${t.id}">
+    <span class="tt">${esc(t.titulo)}</span>
+    <span class="ts"><span class="tg ${est === 'em debate' ? 'destaque' : est === 'decidido' ? 'ok' : ''}">${ESTADO_TXT[est] || est}</span>
+      ${so.msgs} msg · ${hora(t.atualizado)}${t.conversa !== 'painel' ? ` · ${esc(nomeConversa(t.conversa))}` : ''}</span>
+    <span class="tq">${[...so.gente].map((id) => esc(part(id).nome)).join(', ')}</span>
+  </button>`;
+}
+function topicos() {
+  const e = S.estado, rs = new Map(rodadas(e.eventos).map((r) => [r.chave, r]));
+  const lista = (e.topicos || []).map((t) => ({ t, est: estadoDe(t, rs) }));
+  const ativos = lista.filter((x) => x.est === 'em debate'), resto = lista.filter((x) => x.est !== 'em debate');
+  $('n-top').textContent = ativos.length ? `(${ativos.length})` : '';
+  const quem = e.agente_topicos ? `Resumo escrito por @${esc(e.agente_topicos)}.` : 'A sala agrupa as mensagens; o resumo escrito aparece quando o agente @topicos estiver aprovado.';
+  $('topicos').innerHTML = `<h3>Tópicos</h3><p class="nota">${quem}</p>
+    ${ativos.length ? `<div class="grupo"><h4>Em debate</h4>${ativos.map((x) => itemTopico(x.t, rs)).join('')}</div>` : '<p class="nota">Nenhum tópico em debate agora.</p>'}
+    ${resto.length ? `<details class="grupo" ${resto.some((x) => x.t.id === selTop) ? 'open' : ''}><summary>Decididos e parados (${resto.length})</summary>${resto.map((x) => itemTopico(x.t, rs)).join('')}</details>` : ''}`;
+  $('topicos').querySelectorAll('[data-top]').forEach((b) => b.onclick = () => {
+    const id = Number(b.dataset.top);
+    selTop = selTop === id ? null : id;
+    verAba('conversa');
+    render();
+  });
+  // Cartão de resumo do tópico aberto.
+  const t = selTop && (e.topicos || []).find((x) => x.id === selTop);
+  const box = $('resumo');
+  box.hidden = !t;
+  if (!t) return;
+  const est = estadoDe(t, rs), so = somar(t, rs);
+  const lista2 = (itens, vazio) => itens.length ? `<ul>${itens.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : `<p class="mut">${vazio}</p>`;
+  const resumo = t.resumo || (e.agente_topicos ? 'Agrupado pela sala (o @topicos não resumiu esta parte).' : 'Sem resumo escrito: aprove o agente @topicos para ter resumo, decisões e pendências escritas.');
+  box.innerHTML = `<details open><summary><b>${esc(t.titulo)}</b> <span class="tg ${est === 'em debate' ? 'destaque' : est === 'decidido' ? 'ok' : ''}">${ESTADO_TXT[est] || est}</span></summary>
+    <div class="rt-grade">
+      <div><h4>Resumo</h4><p>${esc(resumo)}</p></div>
+      <div><h4>Decidido</h4>${lista2([...t.decidido, ...so.decidido], 'Nada decidido ainda.')}</div>
+      <div><h4>Pendente</h4>${lista2([...t.pendente, ...so.pendentes], 'Nada esperando.')}</div>
+      <div><h4>Quem participou</h4><p>${[...so.gente].map((id) => esc(part(id).nome)).join(', ') || '—'}</p>
+        <h4>Custo</h4><p>${so.respostas} resposta${so.respostas === 1 ? '' : 's'} de agentes${so.ecos ? ` (${so.ecos} só confirmando)` : ''} · ${String(Math.round(so.ms / 100) / 10).replace('.', ',')} s</p></div>
+    </div>
+    <div class="acoes"><a class="btn" href="/fluxo?v=visual&rodadas=${t.rodadas.join(',')}">Ver o fluxo</a><button class="btn" type="button" id="fecha-top">Fechar tópico</button></div>
+  </details>`;
+  $('fecha-top').onclick = () => { selTop = null; render(); };
 }
 function alertaInline(box, msg) { const d = document.createElement('div'); d.className = 'q'; d.style.color = 'var(--bad)'; d.textContent = msg; box.append(d); }
 render();

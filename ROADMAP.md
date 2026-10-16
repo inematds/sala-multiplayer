@@ -24,7 +24,7 @@
 ## v0.6 — Fluxo Texto | Visual — feito (16/10/2026)
 - Botão no Fluxo: diagrama de sequência por rodada (colunas por participante, setas, marcas de proposta, aprovação, pendente, teto e eco) e faixa de resolução (pedido, propostas, decidido, pendente, custo).
 
-## v0.7 — Tópicos
+## v0.7 — Tópicos — feito (16/10/2026)
 - Coluna de tópicos à direita do chat e cartão de resumo no alto; o agente @topicos escreve o resumo quando aprovado, e até lá a sala monta a parte estruturada.
 
 ## v0.3 (antigo, ainda pendente)

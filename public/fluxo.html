@@ -94,6 +94,7 @@ function tudo() {
 const MARCA = {
   proposta: (e) => `proposta #${e.meta?.aprovacao ?? ''}`, rascunho: (e) => `rascunho #${e.meta?.aprovacao ?? ''}`,
   ferramenta: () => 'usa ferramenta', resultado: () => 'resultado', pedido: (e) => `pedido #${e.meta?.aprovacao ?? ''}`,
+  topico: (e) => `tópico #${e.meta?.topico ?? ''}`,
 };
 function marca(e) {
   if (e.tipo === 'sistema') return /^Teto/.test(e.texto) ? ['teto', 'ruim'] : /falhou/.test(e.texto) ? ['falhou', 'ruim'] : ['aviso', ''];

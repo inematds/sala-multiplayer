@@ -79,6 +79,9 @@ export async function iniciar(aoMudar) {
   on('ativos', (d) => { S.estado.ativos = d; });
   on('config', (d) => { S.estado.config = d; S.estado.perfil.teto_turnos = d.teto_turnos; S.estado.perfil.teto_diario = d.teto_diario; });
   on('stats', (d) => { S.estado.stats = d; });
+  on('topico', (d) => {
+    S.estado.topicos = [d, ...(S.estado.topicos || []).filter((t) => t.id !== d.id)];
+  });
   return S.estado;
 }
 

@@ -20,7 +20,7 @@ Guia completo (landing + passo a passo): **https://inematds.github.io/sala-multi
 
 | Tela | O que mostra |
 |---|---|
-| **Sala** (`/`) | No topo: mensagens da última hora, agentes trabalhando, aprovações pendentes e respostas do dia. À esquerda: participantes (Todos, Pessoas, Agentes, Ferramentas); clique para filtrar. À direita: o chat, com seletor de conversa. |
+| **Sala** (`/`) | No topo: mensagens da última hora, agentes trabalhando, aprovações pendentes e respostas do dia. À esquerda: participantes (Todos, Pessoas, Agentes, Ferramentas); clique para filtrar. No meio: o chat, com seletor de conversa. À direita: **Tópicos** (em debate no alto; decididos e parados recolhidos). Clicar num tópico filtra o chat e abre o **resumo** no alto: resumo, decidido, pendente, quem participou, custo e "Ver o fluxo". No celular, Conversa e Tópicos viram abas. |
 | **Grafo** (`/grafo`) | Quem conversa com quem. A linha engrossa com o volume e uma bolinha corre por ela a cada mensagem. |
 | **Fluxo** (`/fluxo`) | Botão **Texto \| Visual**. Texto: tudo o que entra e sai, na ordem em que acontece. Visual: uma rodada por mensagem de pessoa, em diagrama de sequência (uma coluna por participante, uma seta por mensagem, marcas de proposta, teto, falha e "só confirma"), com a faixa de resolução ao lado: pedido, propostas, decidido, pendente, travas e custo. |
 | **Config** (`/config`) | Limites da sala, de cada agente e dos convidados; ligar e desligar convidado. Só o dono, com a senha. |
@@ -33,7 +33,7 @@ Guia completo (landing + passo a passo): **https://inematds.github.io/sala-multi
 ```bash
 git clone https://github.com/inematds/sala-multiplayer && cd sala-multiplayer
 npm run demo          # demonstração com agentes falsos: http://127.0.0.1:4601
-npm test              # 41 testes, sem chamar agentes nem Telegram
+npm test              # 45 testes, sem chamar agentes nem Telegram
 ```
 
 Com agentes de verdade:
@@ -71,6 +71,10 @@ Peça na conversa, por exemplo: "cria um agente que revise meus textos". O Claud
 
 Os agentes aprovados ficam em `data/<perfil>/agentes.json` (fora do git). Para tirar um, apague a entrada e reinicie a sala. No painel, cada agente mostra quantas respostas deu hoje e o tempo médio por resposta.
 
+## Tópicos
+
+Depois de cada mensagem, a sala coloca a conversa num tópico. Sem o agente organizador, ela junta as mensagens seguidas da mesma conversa (até 15 minutos de intervalo) num tópico sem resumo escrito; propostas, aprovações e custo aparecem mesmo assim, porque a sala já registra isso. Com o agente **@topicos** aprovado (peça "cria um agente que organize a conversa em tópicos"; o id precisa ser `topicos`, ou mude `agente_topicos` no perfil), ele escreve título, resumo, decidido e pendente, e escolhe entre atualizar um tópico aberto ou abrir outro. Cada resumo conta como uma resposta no teto diário. Os tópicos ficam no banco da sala (`data/<perfil>/sala.db`).
+
 ## Configuração: só o dono muda
 
 Os limites (turnos entre agentes, respostas por mensagem, respostas por dia, tamanho da resposta, regras do convidado: teto por dia, se precisa de aprovação nova ao voltar, se o convite vence) e o modelo, o esforço e o teto de cada agente ficam na tela **Config** (`/config`). Mudar exige a **senha do dono** (`SALA_DONO_SENHA` no `.env`). No Telegram, o dono usa `/config` para ver e `/config teto_turnos 20` (ou `/config agente.claude.nivel super`) para mudar, reconhecido pelo id dele. Quem não é o dono pede no chat ("aumenta o teto para 20"): o agente monta uma proposta e só o dono aprova. As mudanças valem na hora e ficam em `data/<perfil>/config.json`, por cima do perfil. O dono de cada perfil é o campo `"dono"` do JSON.
@@ -81,7 +85,7 @@ Os limites (turnos entre agentes, respostas por mensagem, respostas por dia, tam
 
 ## Próximos passos
 
-Veja o [ROADMAP.md](ROADMAP.md). Na v0.2 entram os **conselhos** do [7conselho](https://github.com/inematds/7conselho) como participantes da sala.
+Veja o [ROADMAP.md](ROADMAP.md): ferramenta nova por pedido (com duas aprovações) e os **conselhos** do [7conselho](https://github.com/inematds/7conselho) como participantes da sala.
 
 ---
 

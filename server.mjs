@@ -149,6 +149,7 @@ function estado() {
     stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
     agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, nivel: a.nivel || 'executor', esforco: a.esforco || '', linhas_max: a.linhas_max || perfil.linhas_max || 6, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
     niveis, config: sala.config(),
+    topicos: banco.topicos(60), agente_topicos: sala.agentes[perfil.agente_topicos || 'topicos'] ? (perfil.agente_topicos || 'topicos') : null,
   };
 }
 
@@ -162,7 +163,7 @@ const servidor = http.createServer(async (req, res) => {
         res.write(`event: ${tipo}\ndata: ${JSON.stringify(d)}\n\n`);
         if (tipo !== 'stats') res.write(`event: stats\ndata: ${JSON.stringify(banco.stats())}\n\n`);
       };
-      const ouvintes = ['evento', 'participante', 'aprovacao', 'ativos', 'config'].map((t) => [t, manda(t)]);
+      const ouvintes = ['evento', 'participante', 'aprovacao', 'ativos', 'config', 'topico'].map((t) => [t, manda(t)]);
       for (const [t, f] of ouvintes) banco.bus.on(t, f);
       const ping = setInterval(() => res.write(': ping\n\n'), 25000);
       req.on('close', () => { clearInterval(ping); for (const [t, f] of ouvintes) banco.bus.off(t, f); });
@@ -244,6 +245,14 @@ async function demo() {
     const bia = await sala.pedirEntrada({ tid: 'demo-bia', nome: 'Bia (convidada)', usuario: 'bia' });
     if (bia.pedido) await sala.aprovar(bia.pedido.id, sala.dono);
     await sala.receber({ de: 'tg-demo-bia', conversa: 'tg:demo-bia', texto: 'oi, posso ver as notas? sem ferramenta', via: 'telegram' }); await espera(900);
-    await sala.pedirEntrada({ tid: 'demo-ana', nome: 'Ana', usuario: 'ana' });
+    await sala.pedirEntrada({ tid: 'demo-ana', nome: 'Ana', usuario: 'ana' }); await espera(900);
+    // Organizador de tópicos aprovado: a partir daqui os tópicos têm resumo escrito.
+    if (!sala.agentes.topicos) {
+      await sala.receber({ de: eu, conversa: 'painel', texto: 'cria agente topicos, sem ferramenta' });
+      const pt = banco.pendentes().find((a) => a.tipo === 'agente');
+      if (pt) await sala.aprovar(pt.id, sala.dono);
+    }
+    await sala.receber({ de: eu, conversa: 'painel', texto: '@codex, painel de tópicos clicável na sala? sem ferramenta' }); await espera(900);
+    await sala.receber({ de: eu, conversa: 'painel', texto: '@claude mesmo assunto: e o resumo no alto do chat? sem ferramenta' });
   }
 }

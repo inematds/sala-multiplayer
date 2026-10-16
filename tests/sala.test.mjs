@@ -555,3 +555,71 @@ test('rodadas: eventos antigos sem rodada são agrupados pela hora e marcados co
   assert.equal(res.tetos.length, 1);
   assert.equal(res.ms, 5000);
 });
+
+// ---------- v0.7: tópicos ----------
+async function comTopicos(extra = {}) {
+  const m = montarComAvisos('pessoa', extra);
+  await m.sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente topicos, sem ferramenta' });
+  await m.sala.aprovar(m.banco.pendentes()[0].id, 'dono');
+  return m;
+}
+
+test('tópicos sem o agente: a sala junta rodadas seguidas da mesma conversa, sem resumo escrito', async () => {
+  const { banco, sala } = montarComAvisos('pessoa');
+  const a = await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex, como listo arquivos? sem ferramenta' });
+  const b = await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex e os ocultos? sem ferramenta' });
+  const [t] = banco.topicos();
+  assert.equal(banco.topicos().length, 1);
+  assert.deepEqual([t.fonte, t.titulo, t.resumo, t.rodadas], ['sala', 'como listo arquivos? sem ferramenta', '', [a.id, b.id]]);
+  await sala.receber({ de: 'dono', conversa: 'tg:42', texto: '@codex outra conversa, sem ferramenta' });
+  assert.equal(banco.topicos().length, 2, 'outra conversa, outro tópico');
+  // Mais de 15 min depois, na mesma conversa: tópico novo.
+  const velha = banco.evento({ conversa: 'painel', de: 'dono', para: 'claude', tipo: 'mensagem', texto: 'assunto de amanhã', rodada: 'propria', hora: new Date(Date.now() + 3600e3).toISOString() });
+  await sala.organizar(velha);
+  assert.equal(banco.topicos().length, 3);
+  assert.ok(!banco.eventos().some((e) => e.tipo === 'topico'), 'sem agente não gasta resposta');
+});
+
+test('tópicos com o agente aprovado: ele resume, decide atualizar ou abrir, e conta no teto', async () => {
+  const { banco, sala } = await comTopicos();
+  const antes = banco.chamadasHoje();
+  const a = await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex painel de tópicos, sem ferramenta' });
+  let [t] = banco.topicos();
+  assert.deepEqual([t.fonte, t.titulo, t.pendente], ['topicos', 'painel de tópicos, sem ferramenta', ['Dono decide']]);
+  assert.match(t.resumo, /^Resumo de:/);
+  const ev = banco.eventos().find((e) => e.tipo === 'topico');
+  assert.deepEqual([ev.rodada, ev.meta.topico, ev.de], [a.id, t.id, 'topicos']);
+  assert.equal(banco.chamadasHoje(), antes + 2, 'resposta do codex + tópico contam no teto diário');
+  const b = await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex mesmo assunto, sem ferramenta' });
+  [t] = banco.topicos();
+  const doAgente = () => banco.topicos().filter((x) => x.fonte === 'topicos');
+  assert.equal(doAgente().length, 1, 'mesmo assunto atualiza o tópico aberto');
+  assert.deepEqual(t.rodadas, [a.id, b.id]);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex outro tema, sem ferramenta' });
+  assert.equal(doAgente().length, 2);
+});
+
+test('tópicos: resposta inválida do agente cai no agrupamento da sala; teto do agente também', async () => {
+  const { banco, sala } = await comTopicos();
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex topico-quebrado, sem ferramenta' });
+  assert.match(banco.eventos().at(-1).texto, /não devolveu um tópico válido/);
+  assert.equal(banco.topicos()[0].fonte, 'sala');
+  await sala.receber({ de: 'dono', conversa: 'tg:8', texto: '@codex válido, sem ferramenta' });
+  assert.equal(banco.topicos()[0].fonte, 'topicos');
+  sala.agentes.topicos.teto_diario = banco.respostasHoje('topicos');
+  await sala.receber({ de: 'dono', conversa: 'tg:9', texto: '@codex outra, sem ferramenta' });
+  assert.equal(banco.topicos()[0].fonte, 'sala', 'no teto, a sala agrupa sem chamar o agente');
+});
+
+test('tópicos: o agente recebe os tópicos abertos e a regra de não inventar decisão', async () => {
+  let ctxVisto = null;
+  const motor = async (ctx) => { if (ctx.tarefa === 'topicos') ctxVisto = ctx; return falso(ctx); };
+  const { banco, sala } = montarComAvisos('pessoa', {}, motor);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente topicos, sem ferramenta' });
+  await sala.aprovar(banco.pendentes()[0].id, 'dono');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex primeiro, sem ferramenta' });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex segundo, sem ferramenta' });
+  assert.match(ctxVisto.sistema, /Não invente decisão/);
+  assert.match(ctxVisto.prompt, /#2 primeiro, sem ferramenta — Resumo de:/);
+  assert.match(ctxVisto.prompt, /Dono: @codex segundo/);
+});
