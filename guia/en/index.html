@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sala Multiplayer — people and AI agents in the same room</title>
-<meta name="description" content="People, Claude Code, Codex and Telegram in the same conversation, with a live dashboard and human approval. Runs on your computer, on your own subscription.">
+<meta name="description" content="People, Claude Code, Codex and Telegram in one conversation, with a live dashboard and human approval. Runs on your computer, on your subscription.">
 <link rel="alternate" hreflang="pt-BR" href="https://inematds.github.io/sala-multiplayer/guia/">
 <link rel="alternate" hreflang="en" href="https://inematds.github.io/sala-multiplayer/guia/en/">
 <link rel="alternate" hreflang="es" href="https://inematds.github.io/sala-multiplayer/guia/es/">
@@ -117,7 +117,7 @@
     <a class="sec" href="#guia">User guide</a>
     <a class="sec" href="#exemplos">Screens</a>
     <a class="sec" href="#roadmap">Roadmap</a>
-    <span class="lang"><a href="../">PT</a><a class="on" href="./">EN</a><a href="../es/">ES</a></span>
+    <span class="lang"><a href="../">PT</a><a class="on" href="../en/">EN</a><a href="../es/">ES</a></span>
     <button class="tgl" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">🌙</button>
     <a class="btn" href="https://github.com/inematds/sala-multiplayer" target="_blank" rel="noopener">GitHub</a>
   </div>
@@ -127,7 +127,7 @@
   <div class="glow"></div>
   <div class="wrap">
     <div>
-      <span class="chip">Multiplayer Agentic · v0.1</span>
+      <span class="chip">Multiplayer Agentic · v0.8</span>
       <h1>People and AI agents in the same <span class="amb">room</span></h1>
       <p class="lead">You, your team, Claude, Codex and whoever writes to your Telegram bot, all in one conversation, with a dashboard that shows everything live.</p>
       <div class="cta">
@@ -141,42 +141,48 @@
 
 <section id="resumo" class="resumo"><div class="wrap">
   <span class="chip">In short</span>
-  <p>Sala Multiplayer is a small program that runs on your computer and puts you (or your team), two AI agents (Claude Code and Codex) and whoever writes to your Telegram bot into one conversation. It is for people who want to work with agents alongside other people, or to set up a support desk where the AI drafts and a human approves before the reply goes out. The agents run on your subscription, with no API. To use it, you need Node 24 and the Claude Code and Codex CLIs installed and logged in.</p>
+  <p>Sala Multiplayer is a small program that runs on your computer and brings you (or your team), two AI agents (Claude Code and Codex), and whoever writes to your Telegram bot into one conversation. It is for people who want to work with agents alongside others, or set up a support desk where AI drafts a reply and a person approves it before it goes out. The agents run on your subscription, with no API. To use it, you need Node 24 and the Claude Code and Codex CLIs installed and logged in.</p>
 </div></section>
 
 <section id="oque"><div class="wrap">
   <span class="chip">What it is</span>
   <h2>One conversation, many participants</h2>
   <p class="sub">First practical version of the <a href="https://inematds.github.io/multiplayer-agentic/guia/" target="_blank" rel="noopener">Multiplayer Agentic</a> concept: instead of each person talking to their own AI alone, everyone talks in the same place.</p>
-  <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/banner-grade-en.jpg" alt="Banner with the parts of the room: Room, Graph, Flow, Telegram, Approval and Profiles" style="width:100%;display:block"></figure>
+  <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/banner-grade-en.jpg" alt="Banner showing the parts of the room: Room, Graph, Flow, Telegram, Approval and Profiles" style="width:100%;display:block"></figure>
   <div class="grid g3">
     <div class="card"><h3>👥 People and agents together</h3><p>Call <code>@claude</code> or <code>@codex</code> in the conversation. Both answer in the room, using your Claude Code and Codex subscriptions.</p></div>
     <div class="card"><h3>📱 Telegram as the door</h3><p>A single bot receives the messages. The agents reply through it with their name in front ("Claude: ...").</p></div>
     <div class="card"><h3>✅ Human in control</h3><p>In atendimento (support) mode, the reply to the customer becomes a draft and only goes out after someone on the team approves it.</p></div>
+    <div class="card"><h3>🤖 Request a new agent</h3><p>Ask, "create an agent to review my writing." Claude returns a proposal with estimated cost and time, and the agent joins only after the owner approves.</p></div>
+    <div class="card"><h3>🧵 Topics with summaries</h3><p>The conversation is grouped into topics in the right column. Click one to see a summary: what was decided, what is pending, who took part and how much it cost.</p></div>
+    <div class="card"><h3>🔎 Visual flow and graph</h3><p>Each message becomes a sequence diagram or a graph with numbered arrows: who called whom, in what order and how it ended. Beside it are the request, decisions and pending items.</p></div>
   </div>
   <div class="ex" style="margin-top:26px">
-    <figure style="margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/single-multi-en.jpg" alt="Personal Agentic OS for one person and Team Agentic OS with shared rooms, memory and tools" loading="lazy" style="width:100%;display:block"><figcaption style="padding:10px 14px;font-size:.9rem;color:var(--mut);background:var(--card)">Single-player × multiplayer: from one person and their agents to a team sharing rooms, memory and tools.</figcaption></figure>
-    <figure style="margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/agentic20-en.jpg" alt="Agentic 2.0: old, one person wired to their tools; new, team and agents connected in the same space" loading="lazy" style="width:100%;display:block"><figcaption style="padding:10px 14px;font-size:.9rem;color:var(--mut);background:var(--card)">Agentic 2.0: before, each person wired to their own tools; now, people, agents and tools in the same space.</figcaption></figure>
+    <figure style="margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/single-multi-en.jpg" alt="Personal Agentic OS for one person and Team Agentic OS with shared rooms, memory and tools" loading="lazy" style="width:100%;display:block"><figcaption style="padding:10px 14px;font-size:.9rem;color:var(--mut);background:var(--card)">Single-player × multiplayer: from one person with their agents to a team sharing rooms, memory and tools.</figcaption></figure>
+    <figure style="margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/agentic20-en.jpg" alt="Agentic 2.0: before, one person connected to their tools; now, a team and agents connected in the same space" loading="lazy" style="width:100%;display:block"><figcaption style="padding:10px 14px;font-size:.9rem;color:var(--mut);background:var(--card)">Agentic 2.0: before, each person connected to their own tools; now, people, agents and tools in the same space.</figcaption></figure>
   </div>
 </div></section>
 
 <section id="fluxo"><div class="wrap">
   <span class="chip">How it works</span>
-  <h2>From Telegram to the dashboard, with a lock in the middle</h2>
-  <p class="sub">Every message enters the room, goes to whoever was called and shows up on the dashboard right away.</p>
+  <h2>From Telegram to the dashboard, with approval in the middle</h2>
+  <p class="sub">Every message enters the room, goes to whoever was called and appears on the dashboard right away.</p>
   <div class="flow">
     <span>Message (Telegram or dashboard)</span><span class="arr">→</span>
     <span>Route: @mention or profile default</span><span class="arr">→</span>
     <span>Agent (Claude or Codex)</span><span class="arr">→</span>
     <span>Tool, if requested</span><span class="arr">→</span>
     <span>Human approval (atendimento)</span><span class="arr">→</span>
-    <span>Reply in the room and on Telegram</span>
+    <span>Reply in the room and on Telegram</span><span class="arr">→</span>
+    <span>Topic updated</span>
   </div>
   <div class="grid g2" style="margin-top:26px">
     <div class="card"><h3>Two ready-made profiles</h3><p><strong>pessoa</strong> (personal): you and your agents; the bot ignores anyone who is not the owner. <strong>atendimento</strong> (support): customers write on Telegram, Claude answers using the answer base, Codex reviews when the team asks, and a supervisor or agent approves.</p></div>
-    <div class="card"><h3>Tools</h3><p>The agent asks with one line <code>FERRAMENTA: nome | entrada</code> and the room runs it. Examples: <code>base</code> (answer base), <code>chamado</code> (ticket), <code>notas</code> (notes), <code>hora</code> (time).</p></div>
-    <div class="card"><h3>Loop limits</h3><p>Up to 4 turns in a row between agents (3 in atendimento) and a daily reply limit (150 in the pessoa profile, 300 in atendimento). Both keep you from wasting your subscription.</p></div>
-    <div class="card"><h3>Security</h3><p>The dashboard only opens on this machine (<code>127.0.0.1</code>). A message from another person is treated as data, never as an order. The agents run without the CLI's own tools, without MCP and in an empty folder.</p></div>
+    <div class="card"><h3>Tools</h3><p>The agent asks with one line, <code>FERRAMENTA: nome | entrada</code>, and the room runs it. Examples: <code>base</code> (answer base), <code>chamado</code> (ticket), <code>notas</code> (notes), <code>hora</code> (time).</p></div>
+    <div class="card"><h3>Who calls whom</h3><p>Between agents, only an <code>@id</code> at the start of a sentence calls someone ("@codex, can you review this?"). Mentioning a name in the middle of a message does not call anyone. A reply that only confirms ("okay, I will wait for the Owner") calls no one and gets the "confirmation only" label. An agent calls someone back only if it asks them a question.</p></div>
+    <div class="card"><h3>Limits to prevent loops</h3><p>Up to 10 consecutive turns between agents (6 in atendimento), up to 12 agent replies per message across all branches (8 in atendimento), a daily limit (400 and 300), a limit per guest (30) and, if you want, per agent. The limit notice appears once per message.</p></div>
+    <div class="card"><h3>Only the owner can make changes</h3><p>Agent limits, model and effort, and guest rules are set on the <strong>Config</strong> screen with the owner password, or on Telegram with <code>/config</code>. Anyone else can ask in the chat, and the owner approves.</p></div>
+    <div class="card"><h3>Security</h3><p>The dashboard only opens on this machine (<code>127.0.0.1</code>). Messages from other people are treated as data, never as instructions. The agents run without the CLI tools, without MCP and in an empty folder.</p></div>
   </div>
 </div></section>
 
@@ -185,9 +191,9 @@
   <h2>What needs to be installed</h2>
   <p class="sub">The demo runs on Node alone. For the real agents, both CLIs must be logged in to your account.</p>
   <div class="grid g3">
-    <div class="card"><h3>Node 24</h3><p>The room uses the SQLite that already ships with Node (<code>node:sqlite</code>), with no dependencies to install.</p><pre><span class="c"># check the version</span>
+    <div class="card"><h3>Node 24</h3><p>The room uses the SQLite that ships with Node (<code>node:sqlite</code>), with no dependencies to install.</p><pre><span class="c"># check the version</span>
 <span class="k">node</span> --version   <span class="c"># v24 or higher</span></pre></div>
-    <div class="card"><h3>Claude Code and Codex</h3><p>Installed and logged in with your subscription. The room calls both CLIs; it does not use an API key.</p><pre><span class="c"># both must respond</span>
+    <div class="card"><h3>Claude Code e Codex</h3><p>Installed and logged in with your subscription. The room calls both CLIs; it does not use an API key.</p><pre><span class="c"># both must respond</span>
 <span class="k">claude</span> --version
 <span class="k">codex</span> --version</pre></div>
     <div class="card"><h3>Telegram bot (optional)</h3><p>Without a bot, the room works through the dashboard only. With a bot, you need the token from @BotFather.</p><pre><span class="c"># on Telegram</span>
@@ -209,16 +215,16 @@
 
   <div class="step"><div class="b">2</div><div>
     <h3>Run the demo</h3>
-    <p>It opens the atendimento profile with fake agents, so you can see the three screens working.</p>
+    <p>It opens the atendimento profile with fake agents, so you can see four screens working: customers, a proposal for a new agent, topics and the visual flow. The demo starts fresh each time and does not touch the real room data.</p>
 <pre><span class="k">npm run demo</span>   <span class="c"># open http://127.0.0.1:4601</span>
-<span class="k">npm test</span>       <span class="c"># 11 tests, no agents or Telegram called</span></pre>
+<span class="k">npm test</span>       <span class="c"># 46 tests, no agents or Telegram called</span></pre>
   </div></div>
 
   <div class="step"><div class="b">3</div><div>
     <h3>Turn on the real agents</h3>
     <p>Pick the profile. In the dashboard, write <code>@claude</code> or <code>@codex</code> to call an agent.</p>
-<pre><span class="k">npm run pessoa</span>        <span class="c"># you and your agents    → http://127.0.0.1:4600</span>
-<span class="k">npm run atendimento</span>   <span class="c"># support desk           → http://127.0.0.1:4600</span></pre>
+<pre><span class="k">npm run pessoa</span>        <span class="c"># you and your agents   → http://127.0.0.1:4600</span>
+<span class="k">npm run atendimento</span>   <span class="c"># support desk          → http://127.0.0.1:4600</span></pre>
   </div></div>
 
   <div class="step"><div class="b">4</div><div>
@@ -252,8 +258,34 @@
   </div></div>
 
   <div class="step"><div class="b">8</div><div>
+    <h3>Invite someone on Telegram without asking for their ID</h3>
+    <p>The person sends <code>/entrar</code> to the bot in a private chat. You receive the request on Telegram, and it also appears under "Pending approvals" on the dashboard (accepting it there requires the owner password). The guest can chat and call agents, but cannot approve anything or change settings, and has their own daily reply limit. To disable access, use <code>/remover</code> or the button on the Config screen.</p>
+<pre><span class="k">/entrar</span>        <span class="c"># the person, in the bot</span>
+<span class="k">/aceitar</span> 7     <span class="c"># you: "Request 7: Ana (@ana) wants to join"</span>
+<span class="k">/recusar</span> 7     <span class="c"># or reject</span>
+<span class="k">/remover</span> ana   <span class="c"># disables access; they can leave with /sair</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">9</div><div>
+    <h3>Request a new agent (and the topic organizer)</h3>
+    <p>Write what you want in the room. Claude does not create anything on its own: it returns a proposal (name, role, engine, tools, daily limit) with cost and time per reply measured from previous replies. Without <code>@topicos</code>, the room groups messages into topics but does not write summaries. Once approved, each topic gets a summary, decisions and pending items, and each message uses one extra call from your subscription.</p>
+<pre><span class="c"># in the room</span>
+@claude cria um agente que revise meus textos
+@claude cria um agente que organize a conversa em tópicos   <span class="c"># id: topicos</span>
+<span class="k">/aprovar</span> 4   <span class="c"># or on the dashboard, under Pending approvals</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">10</div><div>
+    <h3>Adjust the limits</h3>
+    <p>On the <strong>Config</strong> screen with the owner password (<code>SALA_DONO_SENHA</code> in <code>.env</code>), or on Telegram. Changes take effect right away.</p>
+<pre><span class="k">/config</span>                         <span class="c"># shows everything</span>
+<span class="k">/config</span> teto_rodada 12           <span class="c"># agent replies per message</span>
+<span class="k">/config</span> agente.claude.nivel super</pre>
+  </div></div>
+
+  <div class="step"><div class="b">11</div><div>
     <h3>Create your own desk</h3>
-    <p>The profiles in <code>perfis/</code> define who takes part, each agent's personality, the tools, the default route, who approves and the limits. Copy one and run it with the new name.</p>
+    <p>The profiles in <code>perfis/</code> define who takes part, each agent’s personality, the tools, the default route, who approves and the limits. Copy one and run it with the new name.</p>
 <pre><span class="k">cp</span> perfis/atendimento.json perfis/vendas.json
 <span class="k">node</span> server.mjs --perfil vendas</pre>
   </div></div>
@@ -261,23 +293,31 @@
 
 <section id="exemplos"><div class="wrap">
   <span class="chip">Screens</span>
-  <h2>The dashboard's three screens</h2>
+  <h2>The dashboard screens</h2>
   <p class="sub">Everything updates live, with no reload. The screens fit without scrolling from 360 to 1920 px wide.</p>
   <div class="ex">
-    <figure><img src="../assets/sala.jpg" alt="Room screen: indicators on top, participants on the left and chat on the right"><figcaption><strong>Room</strong> (<code>/</code>): on top, messages from the last hour, agents working, pending approvals and replies today. On the left, the participants; click to filter. On the right, the chat.</figcaption></figure>
-    <figure><img src="../assets/grafo.jpg" alt="Graph screen: participants connected by lines"><figcaption><strong>Graph</strong> (<code>/grafo</code>): who talks to whom. The line gets thicker with volume and a dot runs along it with each message.</figcaption></figure>
-    <figure><img src="../assets/fluxo.jpg" alt="Flow screen: list of events in order"><figcaption><strong>Flow</strong> (<code>/fluxo</code>): everything that comes in and goes out, scrolling in the order it happens.</figcaption></figure>
-    <figure><img src="../assets/sala-celular.jpg" alt="Room screen on a phone" style="max-height:534px;object-fit:contain;background:var(--card)"><figcaption><strong>On a phone</strong>: the same Room at 360 px wide.</figcaption></figure>
+    <figure><img src="../assets/sala.jpg" alt="Room screen: indicators at the top, participants on the left, chat with the topic summary above and the topics column on the right" loading="lazy"><figcaption><strong>Room</strong> (<code>/</code>): at the top are messages from the last hour, agents working, pending approvals and replies today. Participants are on the left. In the middle is the chat in one column: each message has an avatar and a colored border (yours are white, people are yellow, agents are blue, system is red). On the right are the <strong>topics</strong>: click one to filter the chat and open its summary at the top (decisions, pending items, participants, cost, "View flow").</figcaption></figure>
+    <figure><img src="../assets/fluxo-visual.jpg" alt="Flow in Visual mode: a sequence diagram for one round and a resolution panel beside it" loading="lazy"><figcaption><strong>Flow · Visual</strong> (<code>/fluxo?v=visual</code>): one round per person’s message, with one column per participant and one arrow per reply. Markers show proposals, limits, errors and "confirmation only." Beside it is the resolution panel: request, proposals, decisions, pending items and cost.</figcaption></figure>
+    <figure><img src="../assets/fluxo-grafo.jpg" alt="Flow in Graph mode: participants in circles and arrows numbered in step order" loading="lazy"><figcaption><strong>Flow · Graph</strong> (<code>/fluxo?v=grafo</code>): the same round as a graph. Each circle is a participant and each arrow shows the step number; the list below describes each step. Beside it is the graph for the <strong>whole topic</strong>: every round on that subject, with the number of messages along each arrow. A quick way to spot loops between agents.</figcaption></figure>
+    <figure><img src="../assets/fluxo.jpg" alt="Flow in Text mode: a list of events in order" loading="lazy"><figcaption><strong>Flow · Text</strong> (<code>/fluxo</code>): everything coming in and going out, in the order it happens. The Text | Visual | Graph button changes the mode; "All" turns all filters back on; in Visual and Graph modes, "Open all" opens every round at once; Pause freezes the list.</figcaption></figure>
+    <figure><img src="../assets/grafo.jpg" alt="Graph screen: participants connected by lines" loading="lazy"><figcaption><strong>Graph</strong> (<code>/grafo</code>): who talks to whom. The line gets thicker as message volume grows, and a dot moves along it with each message.</figcaption></figure>
+    <figure><img src="../assets/config.jpg" alt="Config screen: limits for the room, agents and guests" loading="lazy"><figcaption><strong>Config</strong> (<code>/config</code>): limits for the room, each agent and guests, plus a button to enable or disable each Telegram guest. Owner only, with password.</figcaption></figure>
+    <figure><div style="display:flex;gap:8px;background:var(--card);justify-content:center;padding:8px 0"><img src="../assets/sala-celular.jpg" alt="Room on a phone, Conversation tab" loading="lazy" style="width:46%;max-height:534px;object-fit:contain"><img src="../assets/topicos-celular.jpg" alt="Room on a phone, Topics tab" loading="lazy" style="width:46%;max-height:534px;object-fit:contain"></div><figcaption><strong>On a phone</strong>: the same Room at 360 px, with Conversation and Topics tabs.</figcaption></figure>
   </div>
 </div></section>
 
 <section id="roadmap"><div class="wrap">
   <span class="chip">Roadmap</span>
   <h2>Next steps</h2>
-  <p class="sub">v0.1 is published. What comes next:</p>
-  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>This version</strong><span>Telegram and the dashboard chat as inputs; Claude Code and Codex on your subscription; example tools; Room, Graph and Flow; limits and human approval; pessoa and atendimento profiles.</span></div></div>
-  <div class="phase"><div class="tag">v0.2</div><div class="d"><strong>Councils in the room</strong><span>The councils from <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> join as participants: <code>@conselho-gestao</code> convenes the council and returns the summary. Also simple per-person login and searchable history per customer.</span></div></div>
-  <div class="phase"><div class="tag">Later</div><div class="d"><strong>More inputs and measurement</strong><span>Email as a third input; subscription cost and usage per person and per agent.</span></div></div>
+  <p class="sub">v0.8 is published. What is already included and what comes next:</p>
+  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>The room</strong><span>Telegram and dashboard chat as inputs; Claude Code and Codex on your subscription; example tools; Room, Graph and Flow; limits and human approval; pessoa and atendimento profiles.</span></div></div>
+  <div class="phase"><div class="tag">v0.2–0.4</div><div class="d"><strong>The room grows with the owner’s approval</strong><span>Request a new agent, with estimated cost and time; model level, effort and reply length for each agent; Config screen and <code>/config</code> on Telegram, which only the owner can change.</span></div></div>
+  <div class="phase"><div class="tag">v0.5</div><div class="d"><strong>Loop limits and guests</strong><span>Per-message limit across branches, <code>@</code> only at the start of a sentence, "confirmation only" does not call anyone, room state in agent prompts; invite guests on Telegram with <code>/entrar</code> and <code>/aceitar</code>.</span></div></div>
+  <div class="phase"><div class="tag">v0.6</div><div class="d"><strong>Visual flow</strong><span>Text | Visual button: a sequence diagram for each message and a resolution panel.</span></div></div>
+  <div class="phase"><div class="tag">v0.7</div><div class="d"><strong>Topics</strong><span>Topics column and summary card; the <code>@topicos</code> agent writes the summary once approved.</span></div></div>
+  <div class="phase"><div class="tag">v0.8</div><div class="d"><strong>Round graph and color-coded chat</strong><span>Graph mode in Flow (round graph beside the full topic graph), "Open all" and "All"; chat in one column, with an avatar and color for each participant type; the demo starts fresh in its own folder.</span></div></div>
+  <div class="phase"><div class="tag">Next</div><div class="d"><strong>Request new tools and bring councils into the room</strong><span>A tool requested in the conversation, with a proposal, a test on a branch and two owner approvals. The councils from <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> join as participants: <code>@conselho-gestao</code> convenes the council and returns the summary.</span></div></div>
+  <div class="phase"><div class="tag">Later</div><div class="d"><strong>Login, history and more inputs</strong><span>Simple login for each person in a team profile; searchable history per customer; email as a third input; subscription cost per person.</span></div></div>
 </div></section>
 
 <footer>

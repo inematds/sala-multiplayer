@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sala Multiplayer — personas y agentes de IA en la misma sala</title>
-<meta name="description" content="Personas, Claude Code, Codex y Telegram en la misma conversación, con panel en vivo y aprobación humana. Corre en tu computadora, con tu suscripción.">
+<meta name="description" content="Personas, Claude Code, Codex y Telegram en la misma conversación, con panel en vivo y aprobación humana. Funciona en tu computadora, con tu suscripción.">
 <link rel="alternate" hreflang="pt-BR" href="https://inematds.github.io/sala-multiplayer/guia/">
 <link rel="alternate" hreflang="en" href="https://inematds.github.io/sala-multiplayer/guia/en/">
 <link rel="alternate" hreflang="es" href="https://inematds.github.io/sala-multiplayer/guia/es/">
@@ -116,8 +116,8 @@
     <a class="sec" href="#fluxo">Cómo funciona</a>
     <a class="sec" href="#guia">Guía de uso</a>
     <a class="sec" href="#exemplos">Pantallas</a>
-    <a class="sec" href="#roadmap">Roadmap</a>
-    <span class="lang"><a href="../">PT</a><a href="../en/">EN</a><a class="on" href="./">ES</a></span>
+    <a class="sec" href="#roadmap">Hoja de ruta</a>
+    <span class="lang"><a href="../">PT</a><a href="../en/">EN</a><a class="on" href="../es/">ES</a></span>
     <button class="tgl" id="themeToggle" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
     <a class="btn" href="https://github.com/inematds/sala-multiplayer" target="_blank" rel="noopener">GitHub</a>
   </div>
@@ -127,9 +127,9 @@
   <div class="glow"></div>
   <div class="wrap">
     <div>
-      <span class="chip">Multiplayer Agentic · v0.1</span>
+      <span class="chip">Multiplayer Agentic · v0.8</span>
       <h1>Personas y agentes de IA en la misma <span class="amb">sala</span></h1>
-      <p class="lead">Tú, tu equipo, Claude, Codex y quien escribe a tu bot de Telegram, en una sola conversación, con un panel que muestra todo en vivo.</p>
+      <p class="lead">Tú, tu equipo, Claude, Codex y quien escribe a tu bot de Telegram en una sola conversación, con un panel que muestra todo en vivo.</p>
       <div class="cta">
         <a class="btn" href="#guia">Empezar la guía</a>
         <a class="btn ghost" href="https://github.com/inematds/sala-multiplayer" target="_blank" rel="noopener">Ver en GitHub</a>
@@ -141,18 +141,21 @@
 
 <section id="resumo" class="resumo"><div class="wrap">
   <span class="chip">En resumen</span>
-  <p>Sala Multiplayer es un programa pequeño que corre en tu computadora y reúne en una sola conversación a ti (o a tu equipo), dos agentes de IA (Claude Code y Codex) y a quien escribe a tu bot de Telegram. Sirve para quien quiere trabajar con agentes junto con otras personas, o armar una atención al cliente en la que la IA redacta un borrador y un humano lo aprueba antes de que la respuesta salga. Los agentes corren con tu suscripción, sin API. Para usarla necesitas Node 24 y los CLI de Claude Code y de Codex instalados y con sesión iniciada.</p>
+  <p>Sala Multiplayer es un programa pequeño que funciona en tu computadora y reúne en una sola conversación a ti (o a tu equipo), dos agentes de IA (Claude Code y Codex) y a quien escribe a tu bot de Telegram. Sirve para trabajar con agentes junto con otras personas o atender clientes con borradores de IA que una persona aprueba antes de enviar. Los agentes funcionan con tu suscripción, sin API. Para usarla, necesitas Node 24 y los CLI de Claude Code y Codex instalados y con sesión iniciada.</p>
 </div></section>
 
 <section id="oque"><div class="wrap">
   <span class="chip">Qué es</span>
   <h2>Una conversación, varios participantes</h2>
-  <p class="sub">Primera versión práctica del concepto <a href="https://inematds.github.io/multiplayer-agentic/guia/" target="_blank" rel="noopener">Multiplayer Agentic</a>: en lugar de que cada persona hable sola con su IA, todos hablan en el mismo lugar.</p>
+  <p class="sub">Primera versión práctica del concepto <a href="https://inematds.github.io/multiplayer-agentic/guia/" target="_blank" rel="noopener">Multiplayer Agentic</a>: en lugar de que cada persona hable a solas con su IA, todos hablan en el mismo lugar.</p>
   <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/banner-grade-es.jpg" alt="Banner con las partes de la sala: Sala, Grafo, Flujo, Telegram, Aprobación y Perfiles" style="width:100%;display:block"></figure>
   <div class="grid g3">
-    <div class="card"><h3>👥 Personas y agentes juntos</h3><p>Llama a <code>@claude</code> o <code>@codex</code> en la conversación. Los dos responden en la sala, con tu suscripción de Claude Code y de Codex.</p></div>
+    <div class="card"><h3>👥 Personas y agentes juntos</h3><p>Llama a <code>@claude</code> y <code>@codex</code> en la conversación. Ambos responden en la sala con tu suscripción de Claude Code y Codex.</p></div>
     <div class="card"><h3>📱 Telegram como puerta</h3><p>Un solo bot recibe los mensajes. Los agentes responden por él con su nombre al frente ("Claude: ...").</p></div>
-    <div class="card"><h3>✅ El humano al mando</h3><p>En el modo <strong>atendimento</strong> (atención al cliente), la respuesta al cliente queda como borrador y solo sale cuando alguien del equipo la aprueba.</p></div>
+    <div class="card"><h3>✅ La persona al mando</h3><p>En el modo de atención, la respuesta al cliente queda como borrador y solo se envía cuando alguien del equipo la aprueba.</p></div>
+    <div class="card"><h3>🤖 Nuevo agente a pedido</h3><p>Pide "crea un agente que revise mis textos". Claude devuelve una propuesta con el costo y el tiempo estimados. El agente se activa cuando el dueño la aprueba.</p></div>
+    <div class="card"><h3>🧵 Temas con resumen</h3><p>La conversación se organiza por temas en la columna derecha. Haz clic en uno para ver el resumen: qué se decidió, qué está pendiente, quién participó y cuánto costó.</p></div>
+    <div class="card"><h3>🔎 Flujo visual y en grafo</h3><p>Cada mensaje se convierte en un diagrama de secuencia o un grafo con flechas numeradas: quién llamó a quién, en qué orden y cómo terminó. Al lado aparecen lo que se pidió, lo decidido y lo que sigue pendiente.</p></div>
   </div>
   <div class="ex" style="margin-top:26px">
     <figure style="margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/single-multi-es.jpg" alt="Agentic OS personal, de una persona, y Agentic OS del equipo, con salas, memoria y herramientas compartidas" loading="lazy" style="width:100%;display:block"><figcaption style="padding:10px 14px;font-size:.9rem;color:var(--mut);background:var(--card)">Individual × multiplayer: de una persona con sus agentes a un equipo que comparte salas, memoria y herramientas.</figcaption></figure>
@@ -162,43 +165,46 @@
 
 <section id="fluxo"><div class="wrap">
   <span class="chip">Cómo funciona</span>
-  <h2>De Telegram al panel, con un freno en el medio</h2>
-  <p class="sub">Todo mensaje entra a la sala, va a quien fue llamado y aparece en el panel al instante.</p>
+  <h2>De Telegram al panel, con un freno en medio</h2>
+  <p class="sub">Cada mensaje entra en la sala, llega a quien fue llamado y aparece en el panel al instante.</p>
   <div class="flow">
     <span>Mensaje (Telegram o panel)</span><span class="arr">→</span>
-    <span>Ruta: @mención o valor por defecto del perfil</span><span class="arr">→</span>
+    <span>Ruta: @mención o valor predeterminado del perfil</span><span class="arr">→</span>
     <span>Agente (Claude o Codex)</span><span class="arr">→</span>
     <span>Herramienta, si la pide</span><span class="arr">→</span>
-    <span>Aprobación humana (atendimento)</span><span class="arr">→</span>
-    <span>Respuesta en la sala y en Telegram</span>
+    <span>Aprobación humana (atención)</span><span class="arr">→</span>
+    <span>Respuesta en la sala y en Telegram</span><span class="arr">→</span>
+    <span>Tema actualizado</span>
   </div>
   <div class="grid g2" style="margin-top:26px">
-    <div class="card"><h3>Dos perfiles listos</h3><p><strong>pessoa</strong> (personal): tú y tus agentes; el bot ignora a quien no es el dueño. <strong>atendimento</strong> (atención al cliente): los clientes escriben en Telegram, Claude atiende con la base de respuestas, Codex revisa cuando el equipo lo pide, y un supervisor o agente aprueba.</p></div>
-    <div class="card"><h3>Herramientas</h3><p>El agente la pide con una línea <code>FERRAMENTA: nome | entrada</code> y la sala la ejecuta. Ejemplos: <code>base</code> (base de respuestas), <code>chamado</code>, <code>notas</code>, <code>hora</code>.</p></div>
-    <div class="card"><h3>Topes contra bucles</h3><p>Hasta 4 turnos seguidos entre agentes (3 en atendimento) y un límite de respuestas por día (150 en el perfil pessoa, 300 en atendimento). Ambos evitan gastar la suscripción en vano.</p></div>
-    <div class="card"><h3>Seguridad</h3><p>El panel solo abre en esta máquina (<code>127.0.0.1</code>). El mensaje de otra persona se trata como dato, nunca como orden. Los agentes corren sin las herramientas propias del CLI, sin MCP y en una carpeta vacía.</p></div>
+    <div class="card"><h3>Dos perfiles listos</h3><p><strong>pessoa</strong>: tú y tus agentes; el bot ignora a quien no es el dueño. <strong>atendimento</strong>: los clientes escriben por Telegram, Claude responde con la base de respuestas, Codex revisa cuando el equipo lo pide y un supervisor o agente aprueba.</p></div>
+    <div class="card"><h3>Herramientas</h3><p>El agente lo solicita con una línea <code>FERRAMENTA: nome | entrada</code> y la sala la ejecuta. Ejemplos: <code>base</code> (base de respuestas), <code>chamado</code>, <code>notas</code>, <code>hora</code>.</p></div>
+    <div class="card"><h3>Quién llama a quién</h3><p>Entre agentes, solo el <code>@id</code> al comienzo de la frase llama ("@codex, ¿revisas esto?"). Mencionar el nombre en medio del texto no activa a nadie. Una respuesta que solo confirma ("de acuerdo, espero al dueño") no llama a nadie y recibe la etiqueta "solo confirma". Un agente solo vuelve a llamar a quien le habló si le hace una pregunta.</p></div>
+    <div class="card"><h3>Límites para evitar ciclos</h3><p>Hasta 10 turnos seguidos entre agentes (6 en atención), hasta 12 respuestas de agentes por mensaje sumando todas las ramas (8 en atención), un límite diario (400 y 300), un tope por invitado (30) y, si quieres, por agente. El aviso aparece una vez por mensaje.</p></div>
+    <div class="card"><h3>Solo el dueño puede cambiarlo</h3><p>Los límites, el modelo y el nivel de esfuerzo de cada agente, así como las reglas para invitados, están en la pantalla <strong>Config</strong>, con la contraseña del dueño, o en Telegram con <code>/config</code>. Quien no es el dueño lo pide en el chat y el dueño lo aprueba.</p></div>
+    <div class="card"><h3>Seguridad</h3><p>El panel solo se abre en esta máquina (<code>127.0.0.1</code>). Los mensajes de otras personas se tratan como datos, nunca como instrucciones. Los agentes funcionan sin las herramientas propias del CLI, sin MCP y en una carpeta vacía.</p></div>
   </div>
 </div></section>
 
 <section id="pre"><div class="wrap">
   <span class="chip">Requisitos previos</span>
   <h2>Qué debe estar instalado</h2>
-  <p class="sub">La demostración corre solo con Node. Para los agentes de verdad, los dos CLI deben tener la sesión iniciada en tu cuenta.</p>
+  <p class="sub">La demostración funciona solo con Node. Para usar los agentes reales, debes iniciar sesión en tu cuenta desde ambos CLI.</p>
   <div class="grid g3">
-    <div class="card"><h3>Node 24</h3><p>La sala usa el SQLite que ya viene con Node (<code>node:sqlite</code>), sin dependencias que instalar.</p><pre><span class="c"># comprobar la versión</span>
-<span class="k">node</span> --version   <span class="c"># v24 o más</span></pre></div>
-    <div class="card"><h3>Claude Code y Codex</h3><p>Instalados y con sesión iniciada con tu suscripción. La sala llama a los dos CLI; no usa clave de API.</p><pre><span class="c"># los dos deben responder</span>
+    <div class="card"><h3>Node 24</h3><p>La sala usa SQLite, que ya viene con Node (<code>node:sqlite</code>), sin dependencias adicionales.</p><pre><span class="c"># comprobar la versión</span>
+<span class="k">node</span> --version   <span class="c"># v24 o superior</span></pre></div>
+    <div class="card"><h3>Claude Code e Codex</h3><p>Instalados y con sesión iniciada mediante tu suscripción. La sala ejecuta ambos CLI; no usa una clave de API.</p><pre><span class="c"># ambos deben responder</span>
 <span class="k">claude</span> --version
 <span class="k">codex</span> --version</pre></div>
-    <div class="card"><h3>Bot de Telegram (opcional)</h3><p>Sin bot, la sala funciona solo por el panel. Con bot, necesitas el token de @BotFather.</p><pre><span class="c"># en Telegram</span>
+    <div class="card"><h3>Bot de Telegram (opcional)</h3><p>Sin bot, la sala funciona solo desde el panel. Con bot, necesitas el token de @BotFather.</p><pre><span class="c"># en Telegram</span>
 <span class="k">@BotFather</span> → /newbot</pre></div>
   </div>
 </div></section>
 
 <section id="guia"><div class="wrap">
   <span class="chip">Guía de uso · paso a paso</span>
-  <h2>De la demostración al bot en línea</h2>
-  <p class="sub">Empieza por la demostración, que usa agentes falsos y no gasta nada. Después activa los agentes de verdad y, al final, Telegram.</p>
+  <h2>De la demostración al bot en funcionamiento</h2>
+  <p class="sub">Empieza con la demostración, que usa agentes simulados y no consume nada. Después activa los agentes reales y, por último, Telegram.</p>
 
   <div class="step"><div class="b">1</div><div>
     <h3>Descarga el proyecto</h3>
@@ -209,28 +215,28 @@
 
   <div class="step"><div class="b">2</div><div>
     <h3>Ejecuta la demostración</h3>
-    <p>Abre el perfil <strong>atendimento</strong> con agentes falsos, para que veas las tres pantallas funcionando.</p>
+    <p>Abre el perfil de atención con agentes simulados para que veas las cuatro pantallas: clientes, una propuesta de agente nuevo, temas y el flujo visual. La demostración empieza limpia cada vez y no modifica los datos de la sala real.</p>
 <pre><span class="k">npm run demo</span>   <span class="c"># abre http://127.0.0.1:4601</span>
-<span class="k">npm test</span>       <span class="c"># 11 pruebas, sin llamar a agentes ni a Telegram</span></pre>
+<span class="k">npm test</span>       <span class="c"># 46 pruebas, sin llamar a agentes ni a Telegram</span></pre>
   </div></div>
 
   <div class="step"><div class="b">3</div><div>
-    <h3>Activa los agentes de verdad</h3>
-    <p>Elige el perfil. En el panel, escribe <code>@claude</code> o <code>@codex</code> para llamar a un agente.</p>
-<pre><span class="k">npm run pessoa</span>        <span class="c"># tú y tus agentes      → http://127.0.0.1:4600</span>
-<span class="k">npm run atendimento</span>   <span class="c"># área de atención      → http://127.0.0.1:4600</span></pre>
+    <h3>Activa los agentes reales</h3>
+    <p>Elige el perfil. En el panel, escribe <code>@claude</code> y <code>@codex</code> para llamar a un agente.</p>
+<pre><span class="k">npm run pessoa</span>        <span class="c"># tú y tus agentes   → http://127.0.0.1:4600</span>
+<span class="k">npm run atendimento</span>   <span class="c"># área de atención  → http://127.0.0.1:4600</span></pre>
   </div></div>
 
   <div class="step"><div class="b">4</div><div>
     <h3>Crea el bot en Telegram</h3>
-    <p>En @BotFather, crea el bot y copia el token. Para que el bot lea mensajes en un grupo, desactiva la privacidad.</p>
-<pre><span class="k">/newbot</span>       <span class="c"># elige el nombre y copia el token</span>
+    <p>En @BotFather, crea el bot y copia el token. Para que pueda leer mensajes de grupo, desactiva la privacidad.</p>
+<pre><span class="k">/newbot</span>       <span class="c"># elige un nombre y copia el token</span>
 <span class="k">/setprivacy</span>   <span class="c"># elige el bot → Disable</span></pre>
   </div></div>
 
   <div class="step"><div class="b">5</div><div>
-    <h3>Completa el .env</h3>
-    <p>El <code>.env</code> queda fuera de git. Averigua tu id numérico con @userinfobot. En atendimento, completa también los ids del supervisor y del agente.</p>
+    <h3>Completa el archivo .env</h3>
+    <p>El <code>.env</code> queda fuera de git. Averigua tu id numérico con @userinfobot. En atención, completa también los ids del supervisor y del agente.</p>
 <pre><span class="k">cp</span> .env.exemplo .env
 <span class="c"># SALA_TELEGRAM_TOKEN=      token de @BotFather</span>
 <span class="c"># SALA_DONO_TELEGRAM_ID=    tu id</span>
@@ -239,21 +245,47 @@
 
   <div class="step"><div class="b">6</div><div>
     <h3>Cada persona envía /start</h3>
-    <p>Un bot de Telegram no puede iniciar la conversación. Sin el <code>/start</code>, no puede avisar de las aprobaciones. Después ejecuta el perfil de nuevo: el sello de Telegram en la parte superior del panel queda "ligado" (activo).</p>
+    <p>Un bot de Telegram no puede iniciar la conversación. Sin el <code>/start</code>, no puede avisarte de las aprobaciones. Después vuelve a ejecutar el perfil: el indicador de Telegram en la parte superior del panel queda "activo".</p>
 <pre><span class="k">/start</span>                <span class="c"># cada persona del equipo, una vez</span>
 <span class="k">npm run atendimento</span>   <span class="c"># o npm run pessoa</span></pre>
   </div></div>
 
   <div class="step"><div class="b">7</div><div>
     <h3>Aprueba las respuestas</h3>
-    <p>En atendimento, el borrador aparece en la parte superior del panel. Apruébalo ahí (puedes editarlo antes) o por Telegram.</p>
+    <p>En atención, el borrador aparece en la parte superior del panel. Apruébalo ahí (puedes editarlo antes) o por Telegram.</p>
 <pre><span class="k">/aprovar</span> 3   <span class="c"># envía el borrador 3 al cliente</span>
 <span class="k">/recusar</span> 3   <span class="c"># descarta el borrador 3</span></pre>
   </div></div>
 
   <div class="step"><div class="b">8</div><div>
+    <h3>Invita a alguien por Telegram, sin pedir su id</h3>
+    <p>La persona envía <code>/entrar</code> al bot en un chat privado. Recibes la solicitud por Telegram y también aparece en "Aprobaciones pendientes" en el panel (para aceptarla ahí, se necesita la contraseña del dueño). La persona invitada puede conversar y llamar a los agentes, pero no puede aprobar nada ni cambiar la configuración; además, tiene su propio límite diario de respuestas. Para desactivarla, usa <code>/remover</code> o el botón de la pantalla Config.</p>
+<pre><span class="k">/entrar</span>        <span class="c"># a pessoa, no bot</span>
+<span class="k">/aceitar</span> 7     <span class="c"># tú: "Solicitud 7: Ana (@ana) quiere entrar"</span>
+<span class="k">/recusar</span> 7     <span class="c"># ou recusa</span>
+<span class="k">/remover</span> ana   <span class="c"># la desactiva; ella puede salir con /sair</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">9</div><div>
+    <h3>Pide un agente nuevo (y el organizador de temas)</h3>
+    <p>Escribe en la sala lo que necesitas. Claude no crea nada por su cuenta: devuelve una propuesta (nombre, función, motor, herramientas y límite diario), con el costo y el tiempo por respuesta calculados a partir de respuestas anteriores. Sin <code>@topicos</code>, la sala agrupa los mensajes por temas, pero no escribe un resumen. Cuando se aprueba, cada tema recibe un resumen, lo decidido y lo pendiente, y cada mensaje consume una llamada adicional de tu suscripción.</p>
+<pre><span class="c"># en la sala</span>
+@claude cria um agente que revise meus textos
+@claude cria um agente que organize a conversa em tópicos   <span class="c"># id: topicos</span>
+<span class="k">/aprovar</span> 4   <span class="c"># o en el panel, en Aprobaciones pendientes</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">10</div><div>
+    <h3>Ajusta los límites</h3>
+    <p>En la pantalla <strong>Config</strong>, con la contraseña del dueño (<code>SALA_DONO_SENHA</code> en el <code>.env</code>), o por Telegram. Los cambios se aplican de inmediato.</p>
+<pre><span class="k">/config</span>                         <span class="c"># muestra todo</span>
+<span class="k">/config</span> teto_rodada 12           <span class="c"># respuestas de agentes por mensaje</span>
+<span class="k">/config</span> agente.claude.nivel super</pre>
+  </div></div>
+
+  <div class="step"><div class="b">11</div><div>
     <h3>Crea tu propia área</h3>
-    <p>Los perfiles en <code>perfis/</code> definen quién participa, la personalidad de cada agente, las herramientas, la ruta por defecto, quién aprueba y los topes. Copia uno y ejecútalo con el nombre nuevo.</p>
+    <p>Los perfiles en <code>perfis/</code> definen quién participa, la personalidad de cada agente, las herramientas, la ruta predeterminada, quién aprueba y los límites. Copia uno y ejecútalo con el nuevo nombre.</p>
 <pre><span class="k">cp</span> perfis/atendimento.json perfis/vendas.json
 <span class="k">node</span> server.mjs --perfil vendas</pre>
   </div></div>
@@ -261,23 +293,31 @@
 
 <section id="exemplos"><div class="wrap">
   <span class="chip">Pantallas</span>
-  <h2>Las tres pantallas del panel</h2>
-  <p class="sub">Todo se actualiza en vivo, sin recargar. Las pantallas caben sin desplazamiento de 360 a 1920 px de ancho.</p>
+  <h2>Las cuatro pantallas del panel</h2>
+  <p class="sub">Todo se actualiza en vivo, sin recargar. Las pantallas caben sin desplazamiento en anchos de 360 a 1920 px.</p>
   <div class="ex">
-    <figure><img src="../assets/sala.jpg" alt="Pantalla Sala: indicadores arriba, participantes a la izquierda y chat a la derecha"><figcaption><strong>Sala</strong> (<code>/</code>): arriba, mensajes de la última hora, agentes trabajando, aprobaciones pendientes y respuestas del día. A la izquierda, los participantes; haz clic para filtrar. A la derecha, el chat.</figcaption></figure>
-    <figure><img src="../assets/grafo.jpg" alt="Pantalla Grafo: participantes unidos por líneas"><figcaption><strong>Grafo</strong> (<code>/grafo</code>): quién conversa con quién. La línea se engrosa con el volumen y una bolita corre por ella con cada mensaje.</figcaption></figure>
-    <figure><img src="../assets/fluxo.jpg" alt="Pantalla Flujo: lista de eventos en orden"><figcaption><strong>Flujo</strong> (<code>/fluxo</code>): todo lo que entra y sale, desplazándose en el orden en que ocurre.</figcaption></figure>
-    <figure><img src="../assets/sala-celular.jpg" alt="Pantalla Sala en el celular" style="max-height:534px;object-fit:contain;background:var(--card)"><figcaption><strong>En el celular</strong>: la misma Sala en 360 px de ancho.</figcaption></figure>
+    <figure><img src="../assets/sala.jpg" alt="Pantalla Sala: indicadores arriba, participantes a la izquierda, chat con el resumen del tema arriba y la columna de temas a la derecha" loading="lazy"><figcaption><strong>Sala</strong> (<code>/</code>): arriba aparecen los mensajes de la última hora, los agentes trabajando, las aprobaciones pendientes y las respuestas del día. A la izquierda están los participantes. En el centro está el chat, en una sola columna: cada mensaje tiene un avatar y un borde de color (los tuyos en blanco, las personas en amarillo, los agentes en azul y el sistema en rojo). A la derecha están los <strong>tópicos</strong>: haz clic en uno para filtrar el chat y abrir arriba el resumen (lo decidido, lo pendiente, quién participó, el costo y "Ver el flujo").</figcaption></figure>
+    <figure><img src="../assets/fluxo-visual.jpg" alt="Flujo en modo Visual: diagrama de secuencia de una ronda y franja de resolución al lado" loading="lazy"><figcaption><strong>Flujo · Visual</strong> (<code>/fluxo?v=visual</code>): una ronda por mensaje de una persona, con una columna por participante y una flecha por respuesta. Las marcas señalan propuestas, límites, errores y "solo confirma". Al lado está la franja de resolución: solicitud, propuestas, lo decidido, lo pendiente y el costo.</figcaption></figure>
+    <figure><img src="../assets/fluxo-grafo.jpg" alt="Flujo en modo Grafo: participantes en círculos y flechas numeradas según el orden de los pasos" loading="lazy"><figcaption><strong>Flujo · Grafo</strong> (<code>/fluxo?v=grafo</code>): la misma ronda en un grafo. Cada círculo representa a un participante y cada flecha lleva el número del paso; la lista de abajo explica cada paso. Al lado está el grafo del <strong>tema completo</strong>: todas las rondas de ese tema y cuántos mensajes pasaron por cada flecha. Sirve para detectar rápidamente ciclos entre agentes.</figcaption></figure>
+    <figure><img src="../assets/fluxo.jpg" alt="Fluxo no modo Texto: lista de eventos em ordem" loading="lazy"><figcaption><strong>Flujo · Texto</strong> (<code>/fluxo</code>): muestra todo lo que entra y sale, en el orden en que ocurre. El botón Texto | Visual | Grafo cambia el modo; "Todos" vuelve a activar todos los filtros; en Visual y Grafo, "Abrir todas" despliega todas las rondas a la vez; Pausar detiene la lista.</figcaption></figure>
+    <figure><img src="../assets/grafo.jpg" alt="Pantalla Grafo: participantes unidos por líneas" loading="lazy"><figcaption><strong>Grafo</strong> (<code>/grafo</code>): quién conversa con quién. La línea se hace más gruesa según el volumen y un punto la recorre con cada mensaje.</figcaption></figure>
+    <figure><img src="../assets/config.jpg" alt="Pantalla Config: límites de la sala, los agentes y los invitados" loading="lazy"><figcaption><strong>Config</strong> (<code>/config</code>): muestra los límites de la sala, de cada agente y de los invitados, además del botón para activar o desactivar a cada invitado de Telegram. Solo el dueño, con su contraseña.</figcaption></figure>
+    <figure><div style="display:flex;gap:8px;background:var(--card);justify-content:center;padding:8px 0"><img src="../assets/sala-celular.jpg" alt="Sala en el celular, pestaña Conversación" loading="lazy" style="width:46%;max-height:534px;object-fit:contain"><img src="../assets/topicos-celular.jpg" alt="Sala en el celular, pestaña Temas" loading="lazy" style="width:46%;max-height:534px;object-fit:contain"></div><figcaption><strong>En el celular</strong>: la misma Sala en 360 px, con las pestañas Conversación y Temas.</figcaption></figure>
   </div>
 </div></section>
 
 <section id="roadmap"><div class="wrap">
-  <span class="chip">Roadmap</span>
+  <span class="chip">Hoja de ruta</span>
   <h2>Próximos pasos</h2>
-  <p class="sub">La v0.1 está publicada. Lo que viene después:</p>
-  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>Esta versión</strong><span>Telegram y chat del panel como entradas; Claude Code y Codex con tu suscripción; herramientas de ejemplo; Sala, Grafo y Flujo; topes y aprobación humana; perfiles pessoa y atendimento.</span></div></div>
-  <div class="phase"><div class="tag">v0.2</div><div class="d"><strong>Consejos en la sala</strong><span>Los consejos de <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> entran como participantes: <code>@conselho-gestao</code> reúne al consejo y devuelve la síntesis. También inicio de sesión simple por persona e historial por cliente con búsqueda.</span></div></div>
-  <div class="phase"><div class="tag">Después</div><div class="d"><strong>Más entradas y medición</strong><span>Correo electrónico como tercera entrada; costo y uso de la suscripción por persona y por agente.</span></div></div>
+  <p class="sub">La v0.8 ya está publicada. Esto es lo que incluye y lo que viene después:</p>
+  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>La sala</strong><span>Telegram y el chat del panel como canales de entrada; Claude Code y Codex con tu suscripción; herramientas de ejemplo; Sala, Grafo y Flujo; límites y aprobación humana; perfiles pessoa y atendimento.</span></div></div>
+  <div class="phase"><div class="tag">v0.2–0.4</div><div class="d"><strong>La sala crece con la aprobación del dueño</strong><span>Agente nuevo a pedido, con costo y tiempo estimados; nivel del modelo, esfuerzo y extensión de respuesta por agente; pantalla Config y <code>/config</code> en Telegram, que solo puede cambiar el dueño.</span></div></div>
+  <div class="phase"><div class="tag">v0.5</div><div class="d"><strong>Fin de los ciclos e invitados</strong><span>Límite por mensaje que suma las ramas, <code>@</code> solo al comienzo de la frase, "solo confirma" no llama a nadie, estado de la sala en el prompt de los agentes; invitación por Telegram con <code>/entrar</code> y <code>/aceitar</code>.</span></div></div>
+  <div class="phase"><div class="tag">v0.6</div><div class="d"><strong>Flujo visual</strong><span>Botón Texto | Visual: diagrama de secuencia por mensaje y franja de resolución.</span></div></div>
+  <div class="phase"><div class="tag">v0.7</div><div class="d"><strong>Temas</strong><span>Columna de temas y tarjeta de resumen; el agente <code>@topicos</code> escribe el resumen cuando se aprueba.</span></div></div>
+  <div class="phase"><div class="tag">v0.8</div><div class="d"><strong>Grafo de la ronda y chat con colores</strong><span>Modo Grafo en Flujo (grafo de la ronda junto al grafo del tema completo), "Abrir todas" y "Todos"; chat en una sola columna, con avatar y color según el tipo de participante; la demostración empieza limpia y en una carpeta propia.</span></div></div>
+  <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Nueva herramienta a pedido y consejos en la sala</strong><span>Herramienta solicitada en la conversación, con propuesta, prueba en una rama y dos aprobaciones del dueño. Los consejos de <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> como participantes: <code>@conselho-gestao</code> reúne al consejo y devuelve la síntesis.</span></div></div>
+  <div class="phase"><div class="tag">Después</div><div class="d"><strong>Inicio de sesión, historial y más canales</strong><span>Inicio de sesión sencillo por persona en el perfil de área; historial de clientes con búsqueda; correo electrónico como tercer canal; costo de la suscripción por persona.</span></div></div>
 </div></section>
 
 <footer>
