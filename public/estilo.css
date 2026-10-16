@@ -82,7 +82,8 @@ select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border
 .m .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.15rem;line-height:1;background:color-mix(in srgb,var(--cor) 16%,var(--card));border:1px solid color-mix(in srgb,var(--cor) 60%,transparent)}
 .m .corpo{min-width:0}
 .m.k-pessoa{--cor:var(--t-pessoa)} .m.k-cliente{--cor:var(--t-cliente)} .m.k-agente{--cor:var(--t-agente)} .m.k-ferramenta{--cor:var(--t-ferramenta)} .m.k-sistema{--cor:var(--t-sistema)}
-.m.meu{--cor:var(--t-eu)}
+/* Sua mensagem: barra grossa + faixa amarela por fora à esquerda + fundo levemente tingido, pra achar de relance. */
+.m.meu{--cor:var(--t-eu);border-left-width:6px;background:color-mix(in srgb,var(--t-eu) 7%,var(--bg2));box-shadow:-5px 0 0 0 var(--amb)}
 .m .c{display:flex;gap:6px;align-items:center;font-size:.82rem;color:var(--mut);flex-wrap:wrap}
 .m .c b{color:var(--txt);font-weight:600}
 .m .x{white-space:pre-wrap;word-break:break-word;margin-top:2px}
