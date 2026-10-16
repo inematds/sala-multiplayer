@@ -271,3 +271,17 @@ test('config: cliente não consegue pedir mudança; senha do dono é conferida',
   assert.equal(senhaConfere(''), false, 'sem senha no .env o painel não muda nada');
   process.env.SALA_DONO_SENHA = antes ?? '';
 });
+
+test('id do Telegram de quem é do perfil é atualizado a cada início', () => {
+  const banco = abrirBanco(':memory:');
+  const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-tg-'));
+  const base = { perfil: perfil('pessoa'), banco, motor: falso, raiz: RAIZ, dados, externo: async () => {} };
+  const antes = process.env.SALA_DONO_TELEGRAM_ID;
+  delete process.env.SALA_DONO_TELEGRAM_ID;
+  criarSala(base);
+  assert.equal(banco.porTelegram('111'), undefined);
+  process.env.SALA_DONO_TELEGRAM_ID = '111';
+  criarSala(base);
+  assert.equal(banco.porTelegram('111').id, 'dono');
+  if (antes === undefined) delete process.env.SALA_DONO_TELEGRAM_ID; else process.env.SALA_DONO_TELEGRAM_ID = antes;
+});

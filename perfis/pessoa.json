@@ -3,7 +3,8 @@
   "nome": "Eu e meus agentes",
   "descricao": "Uma pessoa e seus agentes. Painel local, sem convidados. O dono fala pelo painel ou pelo Telegram.",
   "pessoas": [
-    { "id": "dono", "nome": "Dono", "papel": "dono", "telegram_id_env": "SALA_DONO_TELEGRAM_ID" }
+    { "id": "dono", "nome": "Dono", "papel": "dono", "telegram_id_env": "SALA_DONO_TELEGRAM_ID" },
+    { "id": "tiza", "nome": "Tiza", "papel": "equipe", "telegram_id_env": "SALA_TIZA_TELEGRAM_ID" }
   ],
   "agentes": [
     { "id": "claude", "nome": "Claude", "motor": "claude", "nivel": "executor", "esforco": "", "papel": "assistente pessoal: organiza, resume, escreve e guarda notas",
@@ -13,7 +14,7 @@
       "persona": "Responde com o trecho de código ou o comando exato, e uma linha de explicação.",
       "ferramentas": [] }
   ],
-  "rota_padrao": { "dono": "claude" },
+  "rota_padrao": { "dono": "claude", "equipe": "claude" },
   "aprovar_para": [],
   "linhas_max": 20,
   "propor_agentes": ["claude"],
