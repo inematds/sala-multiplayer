@@ -275,15 +275,15 @@ body:has(.cfg){height:auto;overflow:auto}
 .topo.topo-2{grid-template-columns:repeat(2,1fr);padding:8px 16px}
 .topo-2 .kpi{display:flex;align-items:baseline;gap:10px;padding:6px 14px}
 .topo-2 .kpi .v{font-size:1.2rem;order:-1}
-.sala{grid-template-columns:290px minmax(0,1fr) 340px}
+.sala{grid-template-columns:250px minmax(0,880px) minmax(260px,1fr) minmax(300px,1.2fr)}
+@media (max-width:1440px){.sala{grid-template-columns:230px minmax(0,1fr) 250px 290px}}
 .lado{gap:8px;padding:8px;overflow:auto}
 .mini{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .mini .kpi{padding:7px 10px;border-radius:10px;background:var(--bg2)}
 .mini .kpi .r{font-size:.7rem}
 .mini .kpi .v{font-size:1.25rem}
 .mini .kpi .s{font-size:.75rem}
-.lado .topicos{border:none;background:none;padding:0;overflow:visible;flex:none}
-.pessoas{border-top:1px solid var(--line);padding-top:4px}
+.pessoas{border-top:1px solid var(--line);padding-top:4px;min-height:0}
 .pessoas summary{font:600 .78rem Sora,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);cursor:pointer;padding:4px 0}
 .pessoas .tabs{border-bottom:none;padding:4px 0}
 .pessoas .lista{overflow:visible;padding:0}
@@ -297,12 +297,26 @@ body:has(.cfg){height:auto;overflow:auto}
 .legenda-mini{display:flex;gap:10px;flex-wrap:wrap;font-size:.78rem;color:var(--mut);padding:4px}
 .legenda-mini>span{display:flex;gap:4px;align-items:center}
 .legenda-mini>span>span{color:var(--mut)}
-@media (max-width:1100px){.sala{grid-template-columns:240px minmax(0,1fr) 280px}}
+/* caixa de digitar: 2 linhas, mesma largura das mensagens */
+.comp{max-width:min(820px,100%);box-sizing:border-box}
+.comp textarea{min-height:64px;line-height:1.4}
+.comp{grid-template-columns:1fr auto}
+.comp #eu{grid-column:1/-1;justify-self:start}
+/* tela média: tópicos em cima do grafo, na mesma coluna */
+@media (max-width:1180px){
+  .sala{grid-template-columns:230px minmax(0,1fr) 300px;grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
+  .lado,.chat{grid-row:1/3}
+  .topicos{grid-column:3;grid-row:1}
+  .grafo-lado{grid-column:3;grid-row:2}
+  #mini-grafo{min-height:220px}
+}
 @media (max-width:860px){
   .sala{grid-template-columns:1fr}
   .abas-movel{display:flex;gap:6px}
-  .lado,.grafo-lado{display:none;max-height:none}
-  body.aba-topicos .lado{display:flex}
+  .sala{grid-template-rows:none}
+  .lado,.chat,.topicos,.grafo-lado{grid-row:auto;grid-column:auto}
+  .lado,.topicos,.grafo-lado{display:none;max-height:none}
+  body.aba-topicos .lado,body.aba-topicos .topicos{display:flex}
   body.aba-grafo .grafo-lado{display:flex}
   body.aba-topicos .chat,body.aba-grafo .chat{display:none}
   #mini-grafo{min-height:520px}

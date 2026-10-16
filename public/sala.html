@@ -24,7 +24,6 @@
       <div class="kpi chama" id="k-aprov-box" role="button" tabindex="0"><div class="r">Aprovações</div><div class="v" id="k-aprov">0</div><div class="s">clique para decidir</div></div>
       <div class="kpi"><div class="r">Respostas hoje</div><div class="v" id="k-hoje">0</div><div class="s" id="k-teto">teto diário</div></div>
     </div>
-    <div class="topicos" id="topicos" aria-label="tópicos"></div>
     <details class="pessoas" open>
       <summary>Participantes</summary>
       <div class="tabs" id="tabs">
@@ -46,10 +45,11 @@
     <div class="dica" id="dica"></div>
     <form class="comp" id="comp">
       <select id="eu" aria-label="você é"></select>
-      <textarea id="texto" rows="1" placeholder="Escreva... use @claude ou @codex para chamar um agente"></textarea>
+      <textarea id="texto" rows="2" placeholder="Escreva... use @claude ou @codex para chamar um agente"></textarea>
       <button class="btn pri" type="submit">Enviar</button>
     </form>
   </section>
+  <aside class="topicos" id="topicos" aria-label="tópicos"></aside>
   <aside class="grafo-lado" aria-label="grafo ao vivo">
     <div class="gl-cab"><h3>Grafo ao vivo</h3><a href="/grafo">abrir grande</a></div>
     <svg id="mini-grafo" role="img" aria-label="quem conversa com quem"></svg>
