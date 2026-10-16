@@ -6,18 +6,19 @@
     { "id": "dono", "nome": "Dono", "papel": "dono", "telegram_id_env": "SALA_DONO_TELEGRAM_ID" }
   ],
   "agentes": [
-    { "id": "claude", "nome": "Claude", "motor": "claude", "papel": "assistente pessoal: organiza, resume, escreve e guarda notas",
+    { "id": "claude", "nome": "Claude", "motor": "claude", "nivel": "executor", "esforco": "", "papel": "assistente pessoal: organiza, resume, escreve e guarda notas",
       "persona": "Prático e direto. Quando a tarefa for de código ou conta técnica, chame @codex.",
       "ferramentas": ["notas", "hora"] },
-    { "id": "codex", "nome": "Codex", "motor": "codex", "papel": "programador: explica e escreve código, revisa scripts",
+    { "id": "codex", "nome": "Codex", "motor": "codex", "nivel": "executor", "esforco": "", "papel": "programador: explica e escreve código, revisa scripts",
       "persona": "Responde com o trecho de código ou o comando exato, e uma linha de explicação.",
       "ferramentas": [] }
   ],
   "rota_padrao": { "dono": "claude" },
   "aprovar_para": [],
+  "linhas_max": 20,
   "propor_agentes": ["claude"],
   "aprovadores": ["dono"],
-  "teto_turnos": 4,
-  "teto_diario": 150,
+  "teto_turnos": 10,
+  "teto_diario": 400,
   "telegram": { "aceitar_desconhecidos": false }
 }

@@ -57,7 +57,8 @@ Es **un solo bot**: los agentes responden por él, con su nombre al frente ("Cla
 - **Llamar a un agente:** escribe `@claude` o `@codex`. Sin mención, vale la ruta del perfil: en el modo pessoa va a Claude; en atendimento, el mensaje de un cliente va a Claude y la conversación del equipo queda solo entre personas.
 - **Herramientas:** el agente la pide con una línea `FERRAMENTA: nome | entrada`; la sala la ejecuta y devuelve el resultado. Ejemplos: `base` (base de respuestas en `perfis/base-atendimento.md`), `chamado`, `notas`, `hora`.
 - **Aprobación:** en atendimento, la respuesta para el cliente queda como borrador. Solo sale cuando alguien del equipo la aprueba en el panel (puede editarla antes) o envía `/aprovar N` por Telegram.
-- **Topes:** hasta 4 turnos seguidos entre agentes (3 en atendimento) y un límite de respuestas por día. Ambos evitan bucles que gasten la suscripción.
+- **Topes:** hasta 10 turnos seguidos entre agentes (6 en atendimento), un límite de respuestas por día (400 y 300) y, si quieres, un tope por agente. Evitan bucles que gasten la suscripción. Cámbialos en `perfis/<perfil>.json` (`teto_turnos`, `teto_diario`).
+- **Modelo, esfuerzo y largo de la respuesta:** cada agente tiene `nivel` (super, topo, executor, menor; el modelo de cada nivel sale de `~/.config/inema/modelos.env`), `esforco` (vacío = el del nivel, o low, medium, high, xhigh) y `linhas_max`. Defínelos en el perfil o, para un agente nuevo, en la misma tarjeta de aprobación.
 - **Seguridad:** el panel solo abre en esta máquina (`127.0.0.1`). El mensaje de otra persona se trata como dato, nunca como orden. En el modo pessoa, el bot ignora a quien no es el dueño. Los agentes corren sin las herramientas propias del CLI, sin MCP y en una carpeta vacía.
 
 ## Agente nuevo a pedido

@@ -70,15 +70,29 @@ function contas(id) {
   const c = S.estado.contas[id];
   return c ? ` · ${c.hoje} hoje · ${String(c.mediaS).replace('.', ',')}s/resposta` : '';
 }
+const NIVEL_TXT = { super: 'super (o mais forte)', topo: 'topo', executor: 'executor (padrão)', menor: 'menor (rápido)' };
+function modeloDe(motor, nivel) { return S.estado.niveis?.[nivel]?.[motor]?.modelo || 'padrão do CLI'; }
+function esforcoDe(motor, nivel) { return S.estado.niveis?.[nivel]?.[motor]?.esforco || 'padrão'; }
+function infoAgente(id) {
+  const g = S.estado.agentes?.find((x) => x.id === id);
+  return g ? ` · ${modeloDe(g.motor, g.nivel)}${g.esforco ? ' ' + g.esforco : ''}` : '';
+}
 function cartaoAgente(a) {
   const g = a.dados.agente, est = a.dados.estimativa;
   const linha = (r, v) => v ? `<div><span class="r">${r}</span> ${esc(v)}</div>` : '';
+  const nivelSel = Object.keys(NIVEL_TXT).map((n) => `<option value="${n}" ${n === (g.nivel || 'executor') ? 'selected' : ''}>${NIVEL_TXT[n]} · ${esc(modeloDe(g.motor, n))}</option>`).join('');
+  const esfSel = ['', 'low', 'medium', 'high', 'xhigh'].map((v) => `<option value="${v}" ${v === (g.esforco || '') ? 'selected' : ''}>${v || 'do nível (' + esc(esforcoDe(g.motor, g.nivel || 'executor')) + ')'}</option>`).join('');
   return `<div class="ap" data-id="${a.id}">
     <div class="q">#${a.id} · ${esc(part(a.de).nome)} propõe um agente novo · pedido de ${esc(part(a.para).nome)} · ${hora(a.hora)}</div>
     <div class="prop"><b>@${esc(g.id)} · ${esc(g.nome)}</b>
       ${linha('Motor', g.motor === 'codex' ? 'Codex' : 'Claude Code')}${linha('Papel', g.papel)}${linha('Jeito', g.persona)}
       ${linha('Ferramentas', est.ferramentas)}${linha('Teto', `${g.teto_diario} respostas por dia`)}
       ${linha('Tempo', est.tempo)}${linha('Custo', est.custo)}${linha('Por quê', g.justificativa)}</div>
+    <div class="ajustes">
+      <label>Modelo <select data-k="nivel">${nivelSel}</select></label>
+      <label>Esforço <select data-k="esforco">${esfSel}</select></label>
+      <label>Resposta até <input data-k="linhas_max" type="number" min="1" max="60" value="${g.linhas_max || 15}"> linhas</label>
+    </div>
     <div class="acoes"><button class="btn pri" data-a="aprovar">Aprovar e criar agente</button><button class="btn" data-a="recusar">Recusar</button></div>
   </div>`;
 }
@@ -107,7 +121,8 @@ function render() {
     lista.querySelectorAll('button[data-a]').forEach((b) => b.onclick = async () => {
       const box = b.closest('.ap');
       b.disabled = true;
-      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea')?.value });
+      const ajustes = box.querySelector('.ajustes') ? Object.fromEntries([...box.querySelectorAll('.ajustes [data-k]')].map((c) => [c.dataset.k, c.type === 'number' ? Number(c.value) : c.value])) : undefined;
+      const r = await postar(`/api/${b.dataset.a}`, { id: box.dataset.id, de: eu, texto: box.querySelector('textarea')?.value, ajustes });
       if (r.erro) { b.disabled = false; alertaInline(box, r.erro); }
     });
   }
@@ -117,7 +132,7 @@ function render() {
     const c = classe(p);
     return `<div class="pp ${sel === p.id ? 'on' : ''}" data-id="${p.id}" role="button" tabindex="0">
       <span class="t-${c}" title="${ROTULO[c]}">${icone(c)}</span>
-      <div><div class="nm">${esc(p.nome)}</div><div class="pa">${ROTULO[c]}${p.origem === 'proposta' ? ' novo' : ''}${p.tipo === 'agente' ? contas(p.id) : ''}${p.papel ? ' · ' + esc(p.papel) : ''}${p.origem === 'telegram' ? ' · Telegram' : ''}</div></div>
+      <div><div class="nm">${esc(p.nome)}</div><div class="pa">${ROTULO[c]}${p.origem === 'proposta' ? ' novo' : ''}${p.tipo === 'agente' ? infoAgente(p.id) + contas(p.id) : ''}${p.papel ? ' · ' + esc(p.papel) : ''}${p.origem === 'telegram' ? ' · Telegram' : ''}</div></div>
       ${e.ativos.includes(p.id) ? '<span class="vivo" title="trabalhando"></span>' : ''}
       <span class="n">${contagem(p.id)}</span></div>`;
   }).join('') || '<div class="pa" style="padding:8px">Ninguém aqui ainda.</div>';

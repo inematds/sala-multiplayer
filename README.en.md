@@ -57,7 +57,8 @@ It is **a single bot**: the agents reply through it, with their name in front ("
 - **Calling an agent:** write `@claude` or `@codex`. Without a mention, the profile's route applies: in pessoa mode it goes to Claude; in atendimento, a customer message goes to Claude and team conversation stays between people.
 - **Tools:** the agent asks with one line `FERRAMENTA: nome | entrada`; the room runs it and returns the result. Examples: `base` (answer base in `perfis/base-atendimento.md`), `chamado` (ticket), `notas` (notes), `hora` (time).
 - **Approval:** in atendimento, the reply to the customer becomes a draft. It only goes out after someone on the team approves it in the dashboard (you can edit it first) or sends `/aprovar N` on Telegram.
-- **Limits:** up to 4 turns in a row between agents (3 in atendimento) and a daily reply limit. Both prevent loops that burn through your subscription.
+- **Limits:** up to 10 turns in a row between agents (6 in atendimento), a daily reply limit (400 and 300) and, optionally, a cap per agent. They prevent loops that burn through your subscription. Change them in `perfis/<perfil>.json` (`teto_turnos`, `teto_diario`).
+- **Model, effort and reply length:** each agent has `nivel` (super, topo, executor, menor; each level's model comes from `~/.config/inema/modelos.env`), `esforco` (empty = the level's own, or low, medium, high, xhigh) and `linhas_max`. Set them in the profile or, for a new agent, right on the approval card.
 - **Security:** the dashboard only opens on this machine (`127.0.0.1`). A message from another person is treated as data, never as an order. In pessoa mode, the bot ignores anyone who is not the owner. The agents run without the CLI's own tools, without MCP and in an empty folder.
 
 ## New agent on request

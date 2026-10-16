@@ -136,3 +136,7 @@ select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border
 .ap .prop .r{color:var(--mut);display:inline-block;min-width:88px}
 .m .tempo{font-size:.72rem;color:var(--mut);margin-top:2px}
 .m.proposta{border-left:3px solid var(--amb,#FACC15)}
+.ap .ajustes{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:.88rem;color:var(--mut)}
+.ap .ajustes label{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.ap .ajustes select,.ap .ajustes input{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;max-width:100%}
+.ap .ajustes input{width:64px}

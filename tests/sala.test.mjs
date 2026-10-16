@@ -52,7 +52,7 @@ test('teto de turnos para o laço entre agentes', async () => {
   const respostas = banco.eventos().filter((e) => e.tipo === 'resposta');
   assert.equal(Math.max(...respostas.map((e) => e.cadeia)), perfil('pessoa').teto_turnos);
   assert.equal(respostas.length, perfil('pessoa').teto_turnos + 1);
-  assert.ok(banco.eventos().some((e) => e.tipo === 'sistema' && /Teto de 4 turnos/.test(e.texto)));
+  assert.ok(banco.eventos().some((e) => e.tipo === 'sistema' && e.texto.includes(`Teto de ${perfil('pessoa').teto_turnos} turnos`)));
 });
 
 test('teto diário barra novas respostas', async () => {
@@ -201,4 +201,28 @@ test('teto do próprio agente barra respostas além do limite', async () => {
   assert.equal(banco.eventos().filter((e) => e.de === 'curto' && e.tipo === 'resposta').length, 1);
   assert.match(banco.eventos().at(-1).texto, /teto do agente/);
   assert.equal(banco.contas().curto.hoje, 1);
+});
+
+test('nível, esforço e tamanho: vêm da proposta, podem ser trocados no cartão e são conferidos', async () => {
+  const { banco, sala } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente forte, sem ferramenta' });
+  const [a] = banco.pendentes();
+  assert.equal(a.dados.agente.nivel, 'executor');
+  assert.equal(a.dados.agente.linhas_max, perfil('pessoa').linhas_max, 'sem tamanho na proposta, vale o do perfil');
+  await assert.rejects(sala.aprovar(a.id, 'dono', null, { nivel: 'mega' }), /nivel/);
+  await assert.rejects(sala.aprovar(a.id, 'dono', null, { esforco: 'turbo' }), /esforco/);
+  await assert.rejects(sala.aprovar(a.id, 'dono', null, { linhas_max: 0 }), /linhas_max/);
+  assert.equal(banco.pendentes().length, 1, 'ajuste inválido não aprova');
+  await sala.aprovar(a.id, 'dono', null, { nivel: 'super', esforco: 'high', linhas_max: 30 });
+  assert.deepEqual([sala.agentes.forte.nivel, sala.agentes.forte.esforco, sala.agentes.forte.linhas_max], ['super', 'high', 30]);
+});
+
+test('o tamanho da resposta de cada agente vai nas regras do prompt', async () => {
+  let visto = '';
+  const banco = abrirBanco(':memory:');
+  const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-l-'));
+  const sala = criarSala({ perfil: perfil('pessoa'), banco, raiz: RAIZ, dados, externo: async () => {},
+    motor: async (ctx) => { visto = ctx.sistema; return 'ok'; } });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@codex oi' });
+  assert.match(visto, new RegExp(`até ${perfil('pessoa').linhas_max} linhas`));
 });

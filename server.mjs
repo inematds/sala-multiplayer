@@ -8,7 +8,7 @@ import { abrirBanco } from './lib/banco.mjs';
 import { criarSala } from './lib/sala.mjs';
 import { criarTelegram } from './lib/telegram.mjs';
 import { claude, codex, falso } from './lib/agentes.mjs';
-import { lerModelos } from './lib/modelos.mjs';
+import { lerModelos, lerNiveis } from './lib/modelos.mjs';
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i < 0 ? d : (process.argv[i + 1]?.startsWith('--') || i + 1 >= process.argv.length ? true : process.argv[i + 1]); };
@@ -30,12 +30,13 @@ const usarFalso = arg('falso', false) === true || process.env.SALA_AGENTES === '
 const dados = path.join(RAIZ, 'data', perfilId);
 const banco = abrirBanco(path.join(dados, 'sala.db'));
 const modelos = lerModelos();
+const niveis = lerNiveis();
 
 async function motor(ctx) {
   if (usarFalso) return falso(ctx);
-  const m = modelos[ctx.agente.motor] || {};
+  const m = niveis[ctx.agente.nivel || 'executor']?.[ctx.agente.motor] || modelos[ctx.agente.motor] || {};
   const fn = ctx.agente.motor === 'codex' ? codex : claude;
-  return fn({ sistema: ctx.sistema, prompt: ctx.prompt, modelo: m.modelo, esforco: m.esforco });
+  return fn({ sistema: ctx.sistema, prompt: ctx.prompt, modelo: m.modelo, esforco: ctx.agente.esforco || m.esforco });
 }
 
 let tg = null;
@@ -87,7 +88,8 @@ function estado() {
     modo: usarFalso ? 'falso' : 'real', telegram: Boolean(tg),
     participantes: banco.participantes(), eventos: banco.eventos(400), pendentes: banco.pendentes(),
     stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
-    agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
+    agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, nivel: a.nivel || 'executor', esforco: a.esforco || '', linhas_max: a.linhas_max || perfil.linhas_max || 6, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
+    niveis,
   };
 }
 
@@ -117,7 +119,9 @@ const servidor = http.createServer(async (req, res) => {
       const b = await corpo(req);
       const quem = (perfil.pessoas || []).find((p) => p.id === b.de);
       if (!quem || !(perfil.aprovadores || []).includes(quem.papel)) return json(res, { erro: 'sem permissão para aprovar' }, 403);
-      const r = url.pathname === '/api/aprovar' ? await sala.aprovar(Number(b.id), b.de, b.texto) : sala.recusar(Number(b.id), b.de);
+      let r;
+      try { r = url.pathname === '/api/aprovar' ? await sala.aprovar(Number(b.id), b.de, b.texto, b.ajustes) : sala.recusar(Number(b.id), b.de); }
+      catch (e) { return json(res, { erro: e.message }, 400); }
       return json(res, r ? { ok: true } : { erro: 'não está pendente' }, r ? 200 : 409);
     }
     const pag = PAGINAS[url.pathname];

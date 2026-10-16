@@ -57,7 +57,8 @@ npm run atendimento   # setor de atendimento  → http://127.0.0.1:4600
 - **Chamar agente:** escreva `@claude` ou `@codex`. Sem menção, vale a rota do perfil: no modo pessoa vai para o Claude; no atendimento, mensagem de cliente vai para o Claude e conversa da equipe fica só entre pessoas.
 - **Ferramentas:** o agente pede com uma linha `FERRAMENTA: nome | entrada`; a sala roda e devolve o resultado. Exemplos: `base` (base de respostas em `perfis/base-atendimento.md`), `chamado`, `notas`, `hora`.
 - **Aprovação:** no atendimento, a resposta para o cliente vira rascunho. Ela só sai depois que alguém da equipe aprova no painel (dá para editar antes) ou manda `/aprovar N` no Telegram.
-- **Tetos:** até 4 turnos seguidos entre agentes (3 no atendimento) e um limite de respostas por dia. Os dois evitam laço gastando a assinatura.
+- **Tetos:** até 10 turnos seguidos entre agentes (6 no atendimento), um limite de respostas por dia (400 e 300) e, se quiser, um teto por agente. Evitam laço gastando a assinatura. Mude em `perfis/<perfil>.json` (`teto_turnos`, `teto_diario`).
+- **Modelo, esforço e tamanho da resposta:** cada agente tem `nivel` (super, topo, executor, menor; o modelo de cada nível vem de `~/.config/inema/modelos.env`), `esforco` (vazio = o do nível, ou low, medium, high, xhigh) e `linhas_max`. Defina no perfil ou, para agente novo, no próprio cartão de aprovação.
 - **Segurança:** o painel só abre nesta máquina (`127.0.0.1`). Mensagem de outra pessoa é tratada como dado, nunca como ordem. No modo pessoa, o bot ignora quem não é o dono. Os agentes rodam sem as ferramentas próprias do CLI, sem MCP e numa pasta vazia.
 
 ## Agente novo por pedido

@@ -64,7 +64,11 @@ export async function iniciar(aoMudar) {
       c.total++; c.hoje++; c.ms += d.meta.ms; c.mediaS = Math.round(c.ms / c.total / 100) / 10;
     }
   });
-  on('participante', (d) => { if (!S.estado.participantes.some((p) => p.id === d.id)) S.estado.participantes.push(d); });
+  on('participante', (d) => {
+    if (!S.estado.participantes.some((p) => p.id === d.id)) S.estado.participantes.push(d);
+    // Agente novo aprovado: busca de novo motor, nível e esforço.
+    if (d.tipo === 'agente') fetch('/api/estado').then((r) => r.json()).then((e) => { S.estado.agentes = e.agentes; aoMudar('agentes', e.agentes); }).catch(() => {});
+  });
   on('aprovacao', (d) => {
     S.estado.pendentes = S.estado.pendentes.filter((p) => p.id !== d.id);
     if (d.estado === 'pendente') S.estado.pendentes.push(d);

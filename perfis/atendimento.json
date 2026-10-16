@@ -8,18 +8,19 @@
     { "id": "atendente", "nome": "Atendente", "papel": "atendente", "telegram_id_env": "SALA_ATENDENTE_TELEGRAM_ID" }
   ],
   "agentes": [
-    { "id": "claude", "nome": "Claude (atendimento)", "motor": "claude", "papel": "primeiro atendimento ao cliente",
+    { "id": "claude", "nome": "Claude (atendimento)", "motor": "claude", "nivel": "executor", "esforco": "", "papel": "primeiro atendimento ao cliente",
       "persona": "Cordial e objetivo. Sempre consulte a ferramenta base antes de responder sobre prazo, troca, pagamento ou entrega. Se a base não resolver ou o cliente estiver insatisfeito, abra um chamado e diga que uma pessoa da equipe vai continuar.",
       "ferramentas": ["base", "chamado"] },
-    { "id": "codex", "nome": "Codex (revisor)", "motor": "codex", "papel": "revisor: confere se uma resposta bate com a base de respostas",
+    { "id": "codex", "nome": "Codex (revisor)", "motor": "codex", "nivel": "executor", "esforco": "", "papel": "revisor: confere se uma resposta bate com a base de respostas",
       "persona": "Quando chamado pela equipe, confira a resposta proposta contra a base e aponte o que está errado ou faltando, em até 3 linhas.",
       "ferramentas": ["base"] }
   ],
   "rota_padrao": { "cliente": "claude" },
   "aprovar_para": ["cliente"],
+  "linhas_max": 8,
   "propor_agentes": ["claude"],
   "aprovadores": ["supervisor", "atendente"],
-  "teto_turnos": 3,
+  "teto_turnos": 6,
   "teto_diario": 300,
   "telegram": { "aceitar_desconhecidos": true, "papel_desconhecido": "cliente" }
 }
