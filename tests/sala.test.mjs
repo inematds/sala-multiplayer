@@ -331,14 +331,25 @@ test('eco: resposta que só confirma é reconhecida (textos reais da sala)', () 
   assert.equal(ehEco('Combinado, mas qual critério desambigua?'), false);
 });
 
-test('eco e citação não chamam outro agente; o eco fica marcado', async () => {
-  const { banco, sala } = montarComAvisos('pessoa');
-  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude so-confirma codex' });
+test('eco entre agentes não chama ninguém e fica marcado; citação também não chama', async () => {
+  const motor = async ({ agente }) => (agente.id === 'claude' ? '@codex, qual o comando?' : '@claude, combinado. Aguardo o Dono.');
+  const { banco, sala } = montarComAvisos('pessoa', {}, motor);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude lista arquivos' });
   const r = banco.eventos().filter((e) => e.tipo === 'resposta');
-  assert.equal(r.length, 1);
-  assert.equal(r[0].meta.eco, true);
-  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude cita codex' });
-  assert.ok(!banco.eventos().some((e) => e.de === 'codex'), 'citar o nome no meio da frase não chama');
+  assert.deepEqual(r.map((e) => e.de), ['claude', 'codex']);
+  assert.equal(r[1].meta.eco, true);
+  const b = montarComAvisos('pessoa');
+  await b.sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude cita codex' });
+  assert.ok(!b.banco.eventos().some((e) => e.de === 'codex'), 'citar o nome no meio da frase não chama');
+});
+
+test('respondendo a uma pessoa, "Certo. @codex, ..." chama o Codex e não é eco', async () => {
+  const motor = async ({ agente }) => (agente.id === 'claude' ? 'Certo. @codex, lista os arquivos acima de 1 GB.' : 'find . -size +1G');
+  const { banco, sala } = montarComAvisos('pessoa', {}, motor);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude lista os arquivos grandes' });
+  const r = banco.eventos().filter((e) => e.tipo === 'resposta');
+  assert.deepEqual(r.map((e) => e.de), ['claude', 'codex']);
+  assert.equal(r[0].meta.eco, undefined);
 });
 
 test('agente só chama de volta quem falou com ele se perguntar algo', async () => {
@@ -523,13 +534,14 @@ import { rodadas, resolucao } from '../public/rodadas.js';
 test('rodadas: uma por mensagem, ramos pelo pai, proposta resolvida pela aprovação', async () => {
   const { banco, sala } = montarComAvisos('pessoa');
   await sala.receber({ de: 'dono', conversa: 'painel', texto: '@claude e @codex, so-confirma codex' });
+  // Eco só entre agentes: respondendo ao Dono não é eco, então o "@codex, combinado" do Claude chama o Codex.
   await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria agente topicos, sem ferramenta' });
   let rs = rodadas(banco.eventos());
   assert.equal(rs.length, 2);
   assert.equal(rs[0].nRamos, 2, 'claude e codex acionados direto = dois ramos');
   const estado = () => ({ participantes: banco.participantes(), pendentes: banco.pendentes() });
   let res = resolucao(rs[0], estado());
-  assert.deepEqual([res.respostas, res.ecos, res.agentes.sort().join()], [2, 2, 'claude,codex']);
+  assert.deepEqual([res.respostas, res.ecos, res.agentes.sort().join()], [3, 0, 'claude,codex']);
   res = resolucao(rs[1], estado());
   assert.equal(res.propostas[0].estado, 'pendente');
   assert.match(res.pendentes[0], /^#1 esperando decisão/);

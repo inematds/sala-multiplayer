@@ -33,7 +33,7 @@ Guia completo (landing + passo a passo): **https://inematds.github.io/sala-multi
 ```bash
 git clone https://github.com/inematds/sala-multiplayer && cd sala-multiplayer
 npm run demo          # demonstração com agentes falsos: http://127.0.0.1:4601
-npm test              # 45 testes, sem chamar agentes nem Telegram
+npm test              # 46 testes, sem chamar agentes nem Telegram
 ```
 
 Com agentes de verdade:
