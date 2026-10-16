@@ -28,7 +28,10 @@ const perfil = JSON.parse(fs.readFileSync(path.join(RAIZ, 'perfis', `${perfilId}
 const porta = Number(arg('porta', process.env.SALA_PORTA || 4600));
 const host = process.env.SALA_HOST || '127.0.0.1';
 const usarFalso = arg('falso', false) === true || process.env.SALA_AGENTES === 'falso' || arg('demo', false) === true;
-const dados = path.join(RAIZ, 'data', perfilId);
+// O demo usa pasta própria e começa limpo a cada início: não mistura com a sala de verdade nem repete a conversa.
+const ehDemo = arg('demo', false) === true;
+const dados = path.join(RAIZ, 'data', ehDemo ? `demo-${perfilId}` : perfilId);
+if (ehDemo) fs.rmSync(dados, { recursive: true, force: true });
 const banco = abrirBanco(path.join(dados, 'sala.db'));
 const modelos = lerModelos();
 const niveis = lerNiveis();
@@ -219,7 +222,7 @@ const servidor = http.createServer(async (req, res) => {
 
 servidor.listen(porta, host, () => {
   console.log(`[sala] perfil "${perfil.nome}" em http://${host}:${porta}  (agentes: ${usarFalso ? 'falsos' : `claude ${modelos.claude.modelo || 'padrão'}, codex ${modelos.codex.modelo || 'padrão'}`})`);
-  if (arg('demo', false) === true) demo();
+  if (ehDemo) demo();
 });
 
 // Conversa de demonstração (motor falso, sem Telegram): serve para ver o grafo e o fluxo andando.

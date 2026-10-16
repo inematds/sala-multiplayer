@@ -179,14 +179,19 @@ function render() {
     const de = part(x.de), para = part(x.para), c = classe(de);
     const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, proposta: `proposta de agente · aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso', topico: 'tópico', pedido: `pedido de entrada · #${x.meta?.aprovacao ?? ''}` }[x.tipo];
     const eco = x.meta?.eco;
-    return `<div class="m ${x.tipo} ${x.de === eu ? 'meu' : ''} ${eco ? 'eco' : ''}">
-      <div class="c"><span class="t-${c}">${icone(c)}</span><b>${esc(de.nome)}</b>${x.para && x.para !== 'sala' ? ` → ${esc(para.nome)}` : ''} · ${hora(x.hora)}
+    const av = x.de === eu ? '🧑‍💻' : AVATAR[c] || '💬';
+    return `<div class="m ${x.tipo} k-${c} ${x.de === eu ? 'meu' : ''} ${eco ? 'eco' : ''}">
+      <span class="av" aria-hidden="true">${av}</span><div class="corpo">
+      <div class="c"><b>${esc(de.nome)}</b>${x.de === eu ? ' <span class="tg">você</span>' : ''}${x.para && x.para !== 'sala' ? ` → ${esc(para.nome)}` : ''} · ${hora(x.hora)}
       ${selo ? `<span class="tg">${selo}</span>` : ''}${eco ? '<span class="tg" title="resposta que só confirma: não chamou ninguém">só confirma</span>' : ''}${conversa === 'todas' && x.conversa !== 'painel' ? `<span class="tg">${esc(nomeConversa(x.conversa))}</span>` : ''}</div>
-      <div class="x">${esc(x.texto)}</div>${x.meta?.ms && x.tipo !== 'rascunho' ? `<div class="tempo">${Math.round(x.meta.ms / 100) / 10}s</div>` : ''}</div>`;
+      <div class="x">${esc(x.texto)}</div>${x.meta?.ms && x.tipo !== 'rascunho' ? `<div class="tempo">${Math.round(x.meta.ms / 100) / 10}s</div>` : ''}</div></div>`;
   }).join('') || '<div class="pa">Sem mensagens ainda. Escreva abaixo ou mande algo para o bot no Telegram.</div>';
   if (noFim) box.scrollTop = box.scrollHeight;
   topicos();
 }
+
+// Avatar de cada mensagem pelo tipo de quem fala (as suas usam 🧑‍💻).
+const AVATAR = { pessoa: '🙂', cliente: '🙋', agente: '🤖', ferramenta: '🛠️', sistema: '⚠️' };
 
 // ---------- Tópicos: lista à direita e resumo no alto do chat ----------
 const ESTADO_TXT = { 'em debate': 'em debate', decidido: 'decidido', parado: 'parado' };

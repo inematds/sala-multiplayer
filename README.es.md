@@ -20,9 +20,9 @@ Guía completa (landing + paso a paso): **https://inematds.github.io/sala-multip
 
 | Pantalla | Qué muestra |
 |---|---|
-| **Sala** (`/`) | Arriba: mensajes de la última hora, agentes trabajando, aprobaciones pendientes y respuestas del día. A la izquierda: participantes (Todos, Pessoas, Agentes, Ferramentas); haz clic para filtrar. En el medio: el chat, con selector de conversación. A la derecha: **Temas** (en debate arriba; decididos y parados plegados). Al hacer clic en un tema, el chat se filtra y arriba se abre el **resumen**: resumen, decidido, pendiente, quién participó, costo y "Ver el flujo". En el celular, Conversación y Temas pasan a ser pestañas. |
+| **Sala** (`/`) | Arriba: mensajes de la última hora, agentes trabajando, aprobaciones pendientes y respuestas del día. A la izquierda: participantes (Todos, Pessoas, Agentes, Ferramentas); haz clic para filtrar. En el medio: el chat, con selector de conversación, todo en una columna; cada mensaje tiene avatar y borde de color (los tuyos en blanco, personas en amarillo, agentes en azul, sistema en rojo). A la derecha: **Temas** (en debate arriba; decididos y parados plegados). Al hacer clic en un tema, el chat se filtra y arriba se abre el **resumen**: resumen, decidido, pendiente, quién participó, costo y "Ver el flujo". En el celular, Conversación y Temas pasan a ser pestañas. |
 | **Grafo** (`/grafo`) | Quién conversa con quién. La línea se engrosa con el volumen y una bolita corre por ella con cada mensaje. |
-| **Flujo** (`/fluxo`) | Botón **Texto \| Visual**. Texto: todo lo que entra y sale, en el orden en que ocurre. Visual: una ronda por mensaje de una persona, en diagrama de secuencia (una columna por participante, una flecha por mensaje, marcas de propuesta, tope, falla y "solo confirma"), con la franja de resolución al lado: pedido, propuestas, decidido, pendiente, topes y costo. |
+| **Flujo** (`/fluxo`) | Botón **Texto \| Visual \| Grafo**. Texto: todo lo que entra y sale, en el orden en que ocurre (el botón **Todos** vuelve a activar todos los filtros). Visual: una ronda por mensaje de una persona, en diagrama de secuencia (una columna por participante, una flecha por mensaje, marcas de propuesta, tope, falla y "solo confirma"), con la franja de resolución al lado: pedido, propuestas, decidido, pendiente, topes y costo. Grafo: la ronda en círculos con flechas numeradas por el orden de los pasos y, al lado, el grafo del **tema entero** (cuántos mensajes pasaron por cada flecha). En Visual y Grafo, **Abrir todas** abre todas las rondas. |
 | **Config** (`/config`) | Límites de la sala, de cada agente y de los invitados; activar y desactivar invitados. Solo el dueño, con la contraseña. |
 
 ![Sala](docs/sala-1280.png)
@@ -32,7 +32,7 @@ Guía completa (landing + paso a paso): **https://inematds.github.io/sala-multip
 
 ```bash
 git clone https://github.com/inematds/sala-multiplayer && cd sala-multiplayer
-npm run demo          # demostración con agentes falsos: http://127.0.0.1:4601
+npm run demo          # demostración con agentes falsos (empieza limpia, carpeta propia): http://127.0.0.1:4601
 npm test              # 46 pruebas, sin llamar a agentes ni a Telegram
 ```
 

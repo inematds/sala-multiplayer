@@ -27,6 +27,11 @@
 ## v0.7 — Tópicos — feito (16/10/2026)
 - Coluna de tópicos à direita do chat e cartão de resumo no alto; o agente @topicos escreve o resumo quando aprovado, e até lá a sala monta a parte estruturada.
 
+## v0.8 — feito (16/10/2026)
+- Fluxo com modo **Grafo**: a rodada em círculos com setas numeradas e, ao lado, o grafo do tópico inteiro. "Abrir todas" no Visual e no Grafo; "Todos" nos filtros do Texto.
+- Chat numa coluna só, com avatar e cor por tipo (você branco, pessoas amarelo, agentes azul, sistema vermelho).
+- Demonstração em pasta própria (`data/demo-<perfil>`), limpa a cada início.
+
 ## v0.3 (antigo, ainda pendente)
 - **Conselhos** do projeto `7conselho` (estratégia, IA, futuro, gestão) como participantes: `@conselho-gestao` reúne o conselho e devolve a síntese na sala; cada conselheiro aparece no grafo.
 - Login simples para o perfil de setor (cada pessoa com sua conta no painel).

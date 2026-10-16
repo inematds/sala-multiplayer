@@ -12,11 +12,14 @@
   <div class="modo" role="group" aria-label="modo de ver o fluxo">
     <button class="tab" data-modo="texto">Texto</button>
     <button class="tab" data-modo="visual">Visual</button>
+    <button class="tab" data-modo="grafo">Grafo</button>
   </div>
   <p id="explica"></p>
+  <button class="btn" id="todas" hidden>Abrir todas</button>
   <button class="btn" id="pausa">Pausar</button>
 </div>
 <div class="fluxo-cab" id="cab">
+  <button class="tab on" data-t="todos">Todos</button>
   <button class="tab on" data-t="pessoa">Pessoas</button>
   <button class="tab on" data-t="agente">Agentes</button>
   <button class="tab on" data-t="ferramenta">Ferramentas</button>
@@ -36,37 +39,50 @@ let modo = url.get('v') || (() => { try { return localStorage.getItem('sala-flux
 // Filtro vindo de um tópico ou de um link: só estas rodadas.
 const soRodadas = url.get('rodadas') ? new Set(url.get('rodadas').split(',').map(String)) : null;
 const abertas = new Set(url.get('rodada') ? [url.get('rodada')] : []);
-let primeira = true;
+let primeira = true, todas = false; // todas: abre também as rodadas que chegarem depois
 const box = $('fluxo'), vis = $('visual');
 
 await iniciar((tipo, d) => {
   if (pausado) return;
   if (tipo === 'evento') { if (modo === 'texto') add(d); else agendar(); }
-  if (tipo === 'aprovacao' && modo === 'visual') agendar();
+  if ((tipo === 'aprovacao' || tipo === 'topico') && modo !== 'texto') agendar();
 });
 nav('fluxo');
+const TIPOS = ['pessoa', 'agente', 'ferramenta', 'sistema'];
+function marcarCab() {
+  document.querySelectorAll('#cab .tab').forEach((x) => x.classList.toggle('on', x.dataset.t === 'todos' ? ligados.size === TIPOS.length : ligados.has(x.dataset.t)));
+}
 document.querySelectorAll('#cab .tab').forEach((b) => b.onclick = () => {
-  b.classList.toggle('on');
-  b.classList.contains('on') ? ligados.add(b.dataset.t) : ligados.delete(b.dataset.t);
-  tudo();
+  const t = b.dataset.t;
+  if (t === 'todos') TIPOS.forEach((x) => ligados.add(x));
+  else ligados.has(t) ? ligados.delete(t) : ligados.add(t);
+  marcarCab(); tudo();
 });
+$('todas').onclick = () => {
+  todas = !todas;
+  if (!todas) abertas.clear();
+  visual();
+};
 $('pausa').onclick = (e) => { pausado = !pausado; e.target.textContent = pausado ? 'Continuar' : 'Pausar'; if (!pausado) desenhar(); };
 document.querySelectorAll('.modo .tab').forEach((b) => b.onclick = () => trocar(b.dataset.modo));
 if (soRodadas) { $('filtro').hidden = false; $('filtro').innerHTML = `Mostrando ${soRodadas.size} rodada(s) de um tópico <a href="/fluxo">ver tudo</a>`; }
 
 function trocar(m) {
-  modo = m === 'visual' ? 'visual' : 'texto';
+  modo = ['visual', 'grafo'].includes(m) ? m : 'texto';
   try { localStorage.setItem('sala-fluxo-modo', modo); } catch { /* sem storage */ }
   const u = new URL(location.href); u.searchParams.set('v', modo); history.replaceState(null, '', u);
   document.querySelectorAll('.modo .tab').forEach((b) => b.classList.toggle('on', b.dataset.modo === modo));
-  $('cab').hidden = modo === 'visual';
-  box.hidden = modo === 'visual'; vis.hidden = modo !== 'visual';
+  const rod = modo !== 'texto';
+  $('cab').hidden = rod; $('todas').hidden = !rod;
+  box.hidden = rod; vis.hidden = !rod;
   $('explica').textContent = modo === 'visual'
     ? 'Uma rodada por mensagem de pessoa: quem chamou quem, na ordem, e como terminou. Clique numa seta para ler a mensagem inteira.'
-    : 'Tudo o que passa pela sala, na ordem em que chega: Telegram, painel, agentes, ferramentas e avisos.';
+    : modo === 'grafo'
+      ? 'Uma rodada por mensagem de pessoa, em grafo: cada círculo é um participante e cada seta leva o número do passo. A lista embaixo diz o que foi cada passo.'
+      : 'Tudo o que passa pela sala, na ordem em que chega: Telegram, painel, agentes, ferramentas e avisos.';
   desenhar();
 }
-function desenhar() { modo === 'visual' ? visual() : tudo(); }
+function desenhar() { modo === 'texto' ? tudo() : visual(); }
 let timer = null;
 function agendar() { clearTimeout(timer); timer = setTimeout(visual, 250); }
 
@@ -123,11 +139,75 @@ function seta(e, cols, ramo, nRamos) {
     <div class="sq-cheio" hidden><span class="mono">${hora(e.hora)}</span> · <b>${esc(part(e.de).nome)}</b> → ${esc(part(e.para).nome)}${e.meta?.ms ? ` · ${Math.round(e.meta.ms / 100) / 10}s` : ''}<div class="x">${esc(e.texto)}</div></div>
   </div>`;
 }
+// Grafo da rodada: participantes em círculo, setas numeradas na ordem dos passos.
+// total: grafo do tópico inteiro (várias rodadas); as setas levam quantas mensagens passaram, não o passo.
+function grafo(evs, cols, total = false) {
+  // Largura do desenho perto da largura real (celular, ou meia tela com os dois grafos lado a lado) para as letras não encolherem.
+  const vw = innerWidth, W = vw < 600 ? 360 : vw < 900 ? 640 : vw < 1600 ? 460 : 640, estreito = W < 500;
+  const H = cols.length > 2 ? (estreito ? 300 : 330) : 170, R = 24, M = estreito ? 70 : 140;
+  const pos = cols.map((_, i) => {
+    if (cols.length <= 2) return [cols.length === 1 ? W / 2 : M + i * (W - 2 * M), H / 2 - 10];
+    const ang = Math.PI + (2 * Math.PI * i) / cols.length;
+    return [W / 2 + Math.cos(ang) * (W / 2 - M + 30), H / 2 - 10 + Math.sin(ang) * (H / 2 - 60)];
+  });
+  const passos = evs.filter((e) => cols.includes(e.de));
+  const pares = new Map();
+  passos.forEach((e, i) => {
+    const b = cols.indexOf(e.para), a = cols.indexOf(e.de);
+    const k = `${a}>${b < 0 ? a : b}`;
+    if (!pares.has(k)) pares.set(k, { a, b: b < 0 ? a : b, n: [], eco: true });
+    const p = pares.get(k); p.n.push(i + 1); if (!e.meta?.eco) p.eco = false;
+  });
+  const arestas = [...pares.values()].map((p) => {
+    const [x1, y1] = pos[p.a], [x2, y2] = pos[p.b];
+    const rot = total ? `${p.n.length}×` : p.n.length > 4 ? `${p.n.slice(0, 3).join(' · ')} … ${p.n.at(-1)}` : p.n.join(' · ');
+    if (p.a === p.b) { // aviso ou ferramenta sem destino: laço no próprio círculo
+      const d = `M${x1 - 10},${y1 - R + 2} C${x1 - 40},${y1 - R - 46} ${x1 + 40},${y1 - R - 46} ${x1 + 10},${y1 - R + 2}`;
+      return `<g class="ga ${p.eco ? 'eco' : ''}"><path d="${d}" marker-end="url(#pt)"/><text x="${x1}" y="${y1 - R - 40}">${rot}</text></g>`;
+    }
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+    const sx = x1 + ux * R, sy = y1 + uy * R, ex = x2 - ux * (R + 4), ey = y2 - uy * (R + 4);
+    const cx = (sx + ex) / 2 - uy * 34, cy = (sy + ey) / 2 + ux * 34; // curva para a direita: ida e volta não se cobrem
+    // Rótulo no meio da curva, puxado para fora dela: ida e volta entre os mesmos dois não se sobrepõem.
+    const nx = -uy, ny = ux, lx = (sx + 2 * cx + ex) / 4 + nx * 6, ly = (sy + 2 * cy + ey) / 4 + ny * 6 + 4;
+    const anc = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle';
+    return `<g class="ga ${p.eco ? 'eco' : ''}"><path d="M${sx},${sy} Q${cx},${cy} ${ex},${ey}" marker-end="url(#pt)"/><text x="${lx}" y="${ly}" text-anchor="${anc}">${rot}</text></g>`;
+  }).join('');
+  const nos = cols.map((id, i) => {
+    const p = part(id), c = classe(p), [x, y] = pos[i];
+    const ini = esc(p.nome.replace(/\(.*\)/, '').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase());
+    return `<g class="gn t-${c}"><circle cx="${x}" cy="${y}" r="${R}"/><text class="ini" x="${x}" y="${y + 5}">${ini}</text><text class="nome" x="${x}" y="${y + R + 18}">${esc(p.nome)}</text></g>`;
+  }).join('');
+  const lista = passos.map((e, i) => {
+    const m = marca(e);
+    return `<li${e.meta?.eco ? ' class="eco"' : ''}><b>${esc(part(e.de).nome)}</b> → ${esc(part(e.para).nome)} ${m ? `<span class="tg ${m[1]}">${esc(m[0])}</span>` : ''} <span class="mut">${esc(e.texto.replace(/\s+/g, ' ').slice(0, 110))}</span></li>`;
+  }).join('');
+  return `<div class="gr">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="grafo da rodada">
+      <defs><marker id="pt" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--mut)"/></marker></defs>
+      ${arestas}${nos}
+    </svg>
+    ${total ? '' : `<ol class="gr-passos">${lista}</ol>`}
+  </div>`;
+}
+// Tópico da rodada e o grafo de todas as rodadas dele que estão carregadas.
+let porChave = new Map();
+function grafoTopico(r) {
+  const t = (S.estado.topicos || []).find((x) => x.rodadas.map(String).includes(r.chave));
+  if (!t) return `<div class="gr-top"><h4>Tópico</h4><p class="mut">Esta rodada ainda não está em nenhum tópico${r.aprox ? ' (mensagens de antes da v0.5)' : ''}.</p></div>`;
+  const rs = t.rodadas.map((id) => porChave.get(String(id))).filter(Boolean);
+  const evs = rs.flatMap((x) => x.eventos.filter((e) => e.tipo !== 'aprovacao'));
+  const fora = t.rodadas.length - rs.length;
+  return `<div class="gr-top"><h4>Tópico inteiro · ${esc(t.titulo)}</h4>
+    <p class="mut">${rs.length} rodada${rs.length === 1 ? '' : 's'} · ${evs.length} mensagens${fora ? ` · ${fora} rodada${fora === 1 ? '' : 's'} antiga${fora === 1 ? '' : 's'} fora da lista carregada` : ''}. Cada seta mostra quantas mensagens passaram por ela.</p>
+    ${grafo(evs, colunas(evs), true)}
+    ${soRodadas ? '' : `<a class="mut" href="/fluxo?v=grafo&rodadas=${t.rodadas.join(',')}">ver só as rodadas deste tópico</a>`}</div>`;
+}
 function bloco(r) {
   const evs = r.eventos.filter((e) => e.tipo !== 'aprovacao');
   const cols = colunas(evs);
   const res = resolucao(r, S.estado);
-  const aberta = abertas.has(r.chave);
+  const aberta = todas || abertas.has(r.chave);
   const vidas = cols.map((_, i) => `linear-gradient(var(--line),var(--line)) ${((i + 0.5) / cols.length) * 100}% 0/1px 100% no-repeat`).join(',');
   const lista = (itens, vazio) => itens.length ? `<ul>${itens.map((i) => `<li>${i}</li>`).join('')}</ul>` : `<p class="mut">${vazio}</p>`;
   return `<section class="rodada ${aberta ? 'aberta' : ''}" data-chave="${r.chave}">
@@ -144,11 +224,11 @@ function bloco(r) {
         ${r.aprox ? '<span class="tg" title="mensagens de antes da v0.5, agrupadas pela hora">aproximado</span>' : ''}
       </span>
     </button>
-    ${aberta ? `<div class="rd-corpo">
-      <div class="sq">
+    ${aberta ? `<div class="rd-corpo ${modo === 'grafo' ? 'com-grafo' : ''}">
+      ${modo === 'grafo' ? `<div class="gr-par"><div><h4 class="gr-tit">Esta rodada</h4>${grafo(evs, cols)}</div>${grafoTopico(r)}</div>` : `<div class="sq">
         <div class="sq-cols" style="--n:${cols.length}">${cols.map((id) => { const p = part(id), c = classe(p); return `<span class="t-${c}" title="${esc(p.nome)}">${icone(c)}<span>${esc(p.nome)}</span></span>`; }).join('')}</div>
         <div class="sq-corpo" style="background:${vidas}">${evs.map((e) => seta(e, cols, r.ramo.get(e.id), r.nRamos)).join('')}</div>
-      </div>
+      </div>`}
       <aside class="res">
         <h4>Pedido</h4><p>${esc(r.inicio.texto)}</p>
         <h4>Propostas</h4>${lista(res.propostas.map((p) => `#${p.id} ${esc(p.texto)} <span class="tg ${p.estado === 'pendente' ? 'destaque' : p.estado === 'recusada' ? 'ruim' : 'ok'}">${p.estado}${p.quem ? ` · ${esc(part(p.quem).nome)}` : ''}</span>`), 'Nenhuma.')}
@@ -162,14 +242,17 @@ function bloco(r) {
 }
 function visual() {
   let lista = rodadas(S.estado.eventos);
+  porChave = new Map(lista.map((r) => [r.chave, r]));
   if (soRodadas) lista = lista.filter((r) => soRodadas.has(String(r.chave)));
   lista.reverse();
   if (primeira && lista[0] && !abertas.size) abertas.add(lista[0].chave);
   primeira = false;
   vis.innerHTML = (lista.map(bloco).join('') || '<p class="mut" style="padding:14px">Nenhuma rodada ainda. Escreva na Sala ou mande algo para o bot.</p>')
     + `<p class="mut rodape">Mostra as últimas ${S.estado.eventos.length} mensagens da sala.</p>`;
+  $('todas').textContent = todas ? 'Fechar todas' : 'Abrir todas';
   vis.querySelectorAll('.rd-cab').forEach((b) => b.onclick = () => {
     const k = b.closest('.rodada').dataset.chave;
+    if (todas) { todas = false; lista.forEach((r) => abertas.add(r.chave)); } // sai do "todas" sem fechar as outras
     abertas.has(k) ? abertas.delete(k) : abertas.add(k);
     visual();
   });

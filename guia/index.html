@@ -127,7 +127,7 @@
   <div class="glow"></div>
   <div class="wrap">
     <div>
-      <span class="chip">Multiplayer Agentic · v0.1</span>
+      <span class="chip">Multiplayer Agentic · v0.8</span>
       <h1>Pessoas e agentes de IA na mesma <span class="amb">sala</span></h1>
       <p class="lead">Você, sua equipe, o Claude, o Codex e quem escreve no seu bot do Telegram numa conversa só, com um painel que mostra tudo ao vivo.</p>
       <div class="cta">
@@ -153,6 +153,9 @@
     <div class="card"><h3>👥 Pessoas e agentes juntos</h3><p>Chame <code>@claude</code> ou <code>@codex</code> na conversa. Os dois respondem na sala, pela sua assinatura do Claude Code e do Codex.</p></div>
     <div class="card"><h3>📱 Telegram como porta</h3><p>Um bot só recebe as mensagens. Os agentes respondem por ele com o nome na frente ("Claude: ...").</p></div>
     <div class="card"><h3>✅ Humano no controle</h3><p>No modo atendimento, a resposta ao cliente vira rascunho e só sai depois que alguém da equipe aprova.</p></div>
+    <div class="card"><h3>🤖 Agente novo por pedido</h3><p>Peça "cria um agente que revise meus textos". O Claude devolve uma proposta com custo e tempo estimados, e o agente só entra depois que o dono aprova.</p></div>
+    <div class="card"><h3>🧵 Tópicos com resumo</h3><p>A conversa vira tópicos na coluna da direita. Clique num deles para ver o resumo: o que foi decidido, o que está pendente, quem participou e quanto custou.</p></div>
+    <div class="card"><h3>🔎 Fluxo visual e em grafo</h3><p>Cada mensagem vira um diagrama de sequência ou um grafo com setas numeradas: quem chamou quem, em que ordem e como terminou. Ao lado, o que foi pedido, decidido e o que ainda espera.</p></div>
   </div>
   <div class="ex" style="margin-top:26px">
     <figure style="margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="assets/single-multi.jpg" alt="Agentic OS pessoal, de uma pessoa, e Agentic OS da equipe, com salas, memória e ferramentas compartilhadas" loading="lazy" style="width:100%;display:block"><figcaption style="padding:10px 14px;font-size:.9rem;color:var(--mut);background:var(--card)">Individual × multiplayer: de uma pessoa com seus agentes para uma equipe que divide salas, memória e ferramentas.</figcaption></figure>
@@ -170,12 +173,15 @@
     <span>Agente (Claude ou Codex)</span><span class="arr">→</span>
     <span>Ferramenta, se pedir</span><span class="arr">→</span>
     <span>Aprovação humana (atendimento)</span><span class="arr">→</span>
-    <span>Resposta na sala e no Telegram</span>
+    <span>Resposta na sala e no Telegram</span><span class="arr">→</span>
+    <span>Tópico atualizado</span>
   </div>
   <div class="grid g2" style="margin-top:26px">
     <div class="card"><h3>Dois perfis prontos</h3><p><strong>pessoa</strong>: você e seus agentes; o bot ignora quem não é o dono. <strong>atendimento</strong>: clientes escrevem no Telegram, o Claude atende com a base de respostas, o Codex revisa quando a equipe pede, e um supervisor ou atendente aprova.</p></div>
     <div class="card"><h3>Ferramentas</h3><p>O agente pede com uma linha <code>FERRAMENTA: nome | entrada</code> e a sala roda. Exemplos: <code>base</code> (base de respostas), <code>chamado</code>, <code>notas</code>, <code>hora</code>.</p></div>
-    <div class="card"><h3>Tetos contra laço</h3><p>Até 4 turnos seguidos entre agentes (3 no atendimento) e um limite de respostas por dia (150 no perfil pessoa, 300 no atendimento). Os dois evitam gastar a assinatura à toa.</p></div>
+    <div class="card"><h3>Quem chama quem</h3><p>Entre agentes, só o <code>@id</code> no começo da frase chama ("@codex, revisa isto?"). Citar o nome no meio do texto não acorda ninguém. Resposta que só confirma ("combinado, aguardo o Dono") não chama ninguém e ganha o selo "só confirma". Um agente só chama de volta quem falou com ele se fizer uma pergunta.</p></div>
+    <div class="card"><h3>Tetos contra laço</h3><p>Até 10 turnos seguidos entre agentes (6 no atendimento), até 12 respostas de agentes por mensagem somando todos os ramos (8 no atendimento), um limite por dia (400 e 300), um teto por convidado (30) e, se quiser, por agente. O aviso de teto sai uma vez por mensagem.</p></div>
+    <div class="card"><h3>Só o dono muda</h3><p>Limites, modelo e esforço de cada agente e regras dos convidados ficam na tela <strong>Config</strong>, com a senha do dono, ou no Telegram com <code>/config</code>. Quem não é o dono pede no chat e o dono aprova.</p></div>
     <div class="card"><h3>Segurança</h3><p>O painel só abre nesta máquina (<code>127.0.0.1</code>). Mensagem de outra pessoa é tratada como dado, nunca como ordem. Os agentes rodam sem as ferramentas próprias do CLI, sem MCP e numa pasta vazia.</p></div>
   </div>
 </div></section>
@@ -209,9 +215,9 @@
 
   <div class="step"><div class="b">2</div><div>
     <h3>Rode a demonstração</h3>
-    <p>Abre o perfil de atendimento com agentes falsos, para você ver as três telas funcionando.</p>
+    <p>Abre o perfil de atendimento com agentes falsos, para você ver as quatro telas funcionando: clientes, uma proposta de agente novo, tópicos e o fluxo visual. A demonstração começa limpa a cada início e não mexe nos dados da sala de verdade.</p>
 <pre><span class="k">npm run demo</span>   <span class="c"># abra http://127.0.0.1:4601</span>
-<span class="k">npm test</span>       <span class="c"># 11 testes, sem chamar agentes nem Telegram</span></pre>
+<span class="k">npm test</span>       <span class="c"># 46 testes, sem chamar agentes nem Telegram</span></pre>
   </div></div>
 
   <div class="step"><div class="b">3</div><div>
@@ -252,6 +258,32 @@
   </div></div>
 
   <div class="step"><div class="b">8</div><div>
+    <h3>Convide alguém pelo Telegram, sem pedir o id</h3>
+    <p>A pessoa manda <code>/entrar</code> ao bot, em conversa privada. Você recebe o pedido no Telegram, e ele também aparece em "Aprovações pendentes" no painel (aceitar ali pede a senha do dono). O convidado conversa e chama os agentes, mas não aprova nada nem muda a configuração, e tem teto próprio de respostas por dia. Para desligar, use <code>/remover</code> ou o botão na tela Config.</p>
+<pre><span class="k">/entrar</span>        <span class="c"># a pessoa, no bot</span>
+<span class="k">/aceitar</span> 7     <span class="c"># você: "Pedido 7: Ana (@ana) quer entrar"</span>
+<span class="k">/recusar</span> 7     <span class="c"># ou recusa</span>
+<span class="k">/remover</span> ana   <span class="c"># desliga; ela mesma sai com /sair</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">9</div><div>
+    <h3>Peça um agente novo (e o organizador de tópicos)</h3>
+    <p>Escreva na sala o que você quer. O Claude não cria nada sozinho: devolve uma proposta (nome, papel, motor, ferramentas, teto por dia) com custo e tempo por resposta medidos nas respostas anteriores. Sem o <code>@topicos</code>, a sala agrupa as mensagens em tópicos mas não escreve resumo. Com ele aprovado, cada tópico ganha resumo, decidido e pendente, e cada mensagem custa uma chamada a mais da assinatura.</p>
+<pre><span class="c"># na sala</span>
+@claude cria um agente que revise meus textos
+@claude cria um agente que organize a conversa em tópicos   <span class="c"># id: topicos</span>
+<span class="k">/aprovar</span> 4   <span class="c"># ou no painel, em Aprovações pendentes</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">10</div><div>
+    <h3>Ajuste os limites</h3>
+    <p>Na tela <strong>Config</strong>, com a senha do dono (<code>SALA_DONO_SENHA</code> no <code>.env</code>), ou pelo Telegram. As mudanças valem na hora.</p>
+<pre><span class="k">/config</span>                         <span class="c"># mostra tudo</span>
+<span class="k">/config</span> teto_rodada 12           <span class="c"># respostas de agentes por mensagem</span>
+<span class="k">/config</span> agente.claude.nivel super</pre>
+  </div></div>
+
+  <div class="step"><div class="b">11</div><div>
     <h3>Crie um setor seu</h3>
     <p>Os perfis em <code>perfis/</code> definem quem participa, a personalidade de cada agente, as ferramentas, a rota padrão, quem aprova e os tetos. Copie um e rode com o nome novo.</p>
 <pre><span class="k">cp</span> perfis/atendimento.json perfis/vendas.json
@@ -261,23 +293,31 @@
 
 <section id="exemplos"><div class="wrap">
   <span class="chip">Telas</span>
-  <h2>As três telas do painel</h2>
+  <h2>As quatro telas do painel</h2>
   <p class="sub">Tudo atualiza ao vivo, sem recarregar. As telas cabem sem rolagem de 360 a 1920 px de largura.</p>
   <div class="ex">
-    <figure><img src="assets/sala.jpg" alt="Tela Sala: indicadores no topo, participantes à esquerda e chat à direita"><figcaption><strong>Sala</strong> (<code>/</code>): no topo, mensagens da última hora, agentes trabalhando, aprovações pendentes e respostas do dia. À esquerda, os participantes; clique para filtrar. À direita, o chat.</figcaption></figure>
-    <figure><img src="assets/grafo.jpg" alt="Tela Grafo: participantes ligados por linhas"><figcaption><strong>Grafo</strong> (<code>/grafo</code>): quem conversa com quem. A linha engrossa com o volume e uma bolinha corre por ela a cada mensagem.</figcaption></figure>
-    <figure><img src="assets/fluxo.jpg" alt="Tela Fluxo: lista de eventos em ordem"><figcaption><strong>Fluxo</strong> (<code>/fluxo</code>): tudo o que entra e sai, rolando na ordem em que acontece.</figcaption></figure>
-    <figure><img src="assets/sala-celular.jpg" alt="Tela Sala no celular" style="max-height:534px;object-fit:contain;background:var(--card)"><figcaption><strong>No celular</strong>: a mesma Sala em 360 px de largura.</figcaption></figure>
+    <figure><img src="assets/sala.jpg" alt="Tela Sala: indicadores no topo, participantes à esquerda, chat com o resumo do tópico no alto e a coluna de tópicos à direita" loading="lazy"><figcaption><strong>Sala</strong> (<code>/</code>): no topo, mensagens da última hora, agentes trabalhando, aprovações pendentes e respostas do dia. À esquerda, os participantes. No meio, o chat, todo numa coluna: cada mensagem tem um avatar e uma borda colorida (as suas em branco, pessoas em amarelo, agentes em azul, sistema em vermelho). À direita, os <strong>tópicos</strong>: clicar num deles filtra o chat e abre o resumo no alto (decidido, pendente, quem participou, custo, "Ver o fluxo").</figcaption></figure>
+    <figure><img src="assets/fluxo-visual.jpg" alt="Fluxo no modo Visual: diagrama de sequência de uma rodada e faixa de resolução ao lado" loading="lazy"><figcaption><strong>Fluxo · Visual</strong> (<code>/fluxo?v=visual</code>): uma rodada por mensagem de pessoa, com uma coluna por participante e uma seta por resposta. Marcas mostram proposta, teto, falha e "só confirma". Ao lado, a faixa de resolução: pedido, propostas, decidido, pendente e custo.</figcaption></figure>
+    <figure><img src="assets/fluxo-grafo.jpg" alt="Fluxo no modo Grafo: participantes em círculos e setas numeradas pela ordem dos passos" loading="lazy"><figcaption><strong>Fluxo · Grafo</strong> (<code>/fluxo?v=grafo</code>): a mesma rodada em grafo. Cada círculo é um participante e cada seta leva o número do passo; a lista embaixo diz o que foi cada passo. Ao lado, o grafo do <strong>tópico inteiro</strong>: todas as rodadas daquele assunto, com quantas mensagens passaram por cada seta. Bom para ver laços entre agentes de relance.</figcaption></figure>
+    <figure><img src="assets/fluxo.jpg" alt="Fluxo no modo Texto: lista de eventos em ordem" loading="lazy"><figcaption><strong>Fluxo · Texto</strong> (<code>/fluxo</code>): tudo o que entra e sai, rolando na ordem em que acontece. O botão Texto | Visual | Grafo troca o modo; "Todos" liga de novo todos os filtros; no Visual e no Grafo, "Abrir todas" abre todas as rodadas de uma vez; Pausar congela a lista.</figcaption></figure>
+    <figure><img src="assets/grafo.jpg" alt="Tela Grafo: participantes ligados por linhas" loading="lazy"><figcaption><strong>Grafo</strong> (<code>/grafo</code>): quem conversa com quem. A linha engrossa com o volume e uma bolinha corre por ela a cada mensagem.</figcaption></figure>
+    <figure><img src="assets/config.jpg" alt="Tela Config: limites da sala, dos agentes e dos convidados" loading="lazy"><figcaption><strong>Config</strong> (<code>/config</code>): limites da sala, de cada agente e dos convidados, e o botão para ligar ou desligar cada convidado do Telegram. Só o dono, com a senha.</figcaption></figure>
+    <figure><div style="display:flex;gap:8px;background:var(--card);justify-content:center;padding:8px 0"><img src="assets/sala-celular.jpg" alt="Sala no celular, aba Conversa" loading="lazy" style="width:46%;max-height:534px;object-fit:contain"><img src="assets/topicos-celular.jpg" alt="Sala no celular, aba Tópicos" loading="lazy" style="width:46%;max-height:534px;object-fit:contain"></div><figcaption><strong>No celular</strong>: a mesma Sala em 360 px, com Conversa e Tópicos em abas.</figcaption></figure>
   </div>
 </div></section>
 
 <section id="roadmap"><div class="wrap">
   <span class="chip">Roadmap</span>
   <h2>Próximos passos</h2>
-  <p class="sub">A v0.1 está publicada. O que vem depois:</p>
-  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>Esta versão</strong><span>Telegram e chat do painel como entradas; Claude Code e Codex pela assinatura; ferramentas de exemplo; Sala, Grafo e Fluxo; tetos e aprovação humana; perfis pessoa e atendimento.</span></div></div>
-  <div class="phase"><div class="tag">v0.2</div><div class="d"><strong>Conselhos na sala</strong><span>Os conselhos do <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> entram como participantes: <code>@conselho-gestao</code> reúne o conselho e devolve a síntese. Também login simples por pessoa e histórico por cliente com busca.</span></div></div>
-  <div class="phase"><div class="tag">Depois</div><div class="d"><strong>Mais entradas e medição</strong><span>E-mail como terceira entrada; custo e uso da assinatura por pessoa e por agente.</span></div></div>
+  <p class="sub">A v0.8 está publicada. O que já entrou e o que vem depois:</p>
+  <div class="phase"><div class="tag">v0.1</div><div class="d"><strong>A sala</strong><span>Telegram e chat do painel como entradas; Claude Code e Codex pela assinatura; ferramentas de exemplo; Sala, Grafo e Fluxo; tetos e aprovação humana; perfis pessoa e atendimento.</span></div></div>
+  <div class="phase"><div class="tag">v0.2–0.4</div><div class="d"><strong>A sala cresce com aprovação do dono</strong><span>Agente novo por pedido, com custo e tempo estimados; nível do modelo, esforço e tamanho da resposta por agente; tela Config e <code>/config</code> no Telegram, que só o dono muda.</span></div></div>
+  <div class="phase"><div class="tag">v0.5</div><div class="d"><strong>Fim do laço e convidados</strong><span>Teto por mensagem somando os ramos, <code>@</code> só no começo da frase, "só confirma" não chama ninguém, estado da sala no prompt dos agentes; convidado pelo Telegram com <code>/entrar</code> e <code>/aceitar</code>.</span></div></div>
+  <div class="phase"><div class="tag">v0.6</div><div class="d"><strong>Fluxo visual</strong><span>Botão Texto | Visual: diagrama de sequência por mensagem e faixa de resolução.</span></div></div>
+  <div class="phase"><div class="tag">v0.7</div><div class="d"><strong>Tópicos</strong><span>Coluna de tópicos e cartão de resumo; o agente <code>@topicos</code> escreve o resumo quando aprovado.</span></div></div>
+  <div class="phase"><div class="tag">v0.8</div><div class="d"><strong>Grafo da rodada e chat colorido</strong><span>Modo Grafo no Fluxo (grafo da rodada ao lado do grafo do tópico inteiro), "Abrir todas" e "Todos"; chat numa coluna só, com avatar e cor por tipo de participante; a demonstração começa limpa e em pasta própria.</span></div></div>
+  <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Ferramenta nova por pedido e conselhos na sala</strong><span>Ferramenta pedida na conversa, com proposta, teste numa branch e duas aprovações do dono. Os conselhos do <a href="https://github.com/inematds/7conselho" target="_blank" rel="noopener">7conselho</a> como participantes: <code>@conselho-gestao</code> reúne o conselho e devolve a síntese.</span></div></div>
+  <div class="phase"><div class="tag">Depois</div><div class="d"><strong>Login, histórico e mais entradas</strong><span>Login simples por pessoa no perfil de setor; histórico por cliente com busca; e-mail como terceira entrada; custo da assinatura por pessoa.</span></div></div>
 </div></section>
 
 <footer>

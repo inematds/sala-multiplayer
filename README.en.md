@@ -20,9 +20,9 @@ Full guide (landing + step by step): **https://inematds.github.io/sala-multiplay
 
 | Screen | What it shows |
 |---|---|
-| **Room** (`/`) | On top: messages from the last hour, agents working, pending approvals and replies today. On the left: participants (All, People, Agents, Tools); click to filter. In the middle: the chat, with a conversation selector. On the right: **Topics** (under debate on top; decided and stalled ones folded). Clicking a topic filters the chat and opens the **summary** on top: summary, decided, pending, who took part, cost and "See the flow". On a phone, Conversation and Topics become tabs. |
+| **Room** (`/`) | On top: messages from the last hour, agents working, pending approvals and replies today. On the left: participants (All, People, Agents, Tools); click to filter. In the middle: the chat, with a conversation selector, all in one column; each message has an avatar and a colored border (yours white, people yellow, agents blue, system red). On the right: **Topics** (under debate on top; decided and stalled ones folded). Clicking a topic filters the chat and opens the **summary** on top: summary, decided, pending, who took part, cost and "See the flow". On a phone, Conversation and Topics become tabs. |
 | **Graph** (`/grafo`) | Who talks to whom. The line gets thicker with volume and a dot runs along it with each message. |
-| **Flow** (`/fluxo`) | A **Text \| Visual** switch. Text: everything that comes in and goes out, in the order it happens. Visual: one round per message from a person, as a sequence diagram (one column per participant, one arrow per message, marks for proposal, limit, failure and "just confirms"), with the resolution strip beside it: request, proposals, decided, pending, limits hit and cost. |
+| **Flow** (`/fluxo`) | A **Text \| Visual \| Graph** switch. Text: everything that comes in and goes out, in the order it happens (the **All** button turns every filter back on). Visual: one round per message from a person, as a sequence diagram (one column per participant, one arrow per message, marks for proposal, limit, failure and "just confirms"), with the resolution strip beside it: request, proposals, decided, pending, limits hit and cost. Graph: the round as circles with arrows numbered in step order and, beside it, the graph of the **whole topic** (how many messages went through each arrow). In Visual and Graph, **Open all** opens every round. |
 | **Config** (`/config`) | Limits for the room, each agent and guests; switch guests on and off. Owner only, with the password. |
 
 ![Room](docs/sala-1280.png)
@@ -32,7 +32,7 @@ Full guide (landing + step by step): **https://inematds.github.io/sala-multiplay
 
 ```bash
 git clone https://github.com/inematds/sala-multiplayer && cd sala-multiplayer
-npm run demo          # demo with fake agents: http://127.0.0.1:4601
+npm run demo          # demo with fake agents (starts clean, own folder): http://127.0.0.1:4601
 npm test              # 46 tests, no agents or Telegram called
 ```
 
