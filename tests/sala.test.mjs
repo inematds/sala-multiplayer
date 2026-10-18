@@ -645,3 +645,16 @@ test('convidado web com o email de uma pessoa do perfil: ao subir, o email volta
   assert.equal(banco.porEmail('nei@x.com')?.id, 'dono');
   assert.equal(banco.participantes().find((p) => p.id === 'web-nei').ativo, 0);
 });
+
+test('@todos: dono chama todos os agentes (menos o organizador); convidado não', async () => {
+  const { banco, sala } = montar('pessoa');
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: '@todos o que acham, sem ferramenta?' });
+  const responderam = new Set(banco.eventos().filter((e) => e.tipo === 'resposta').map((e) => e.de));
+  for (const a of perfil('pessoa').agentes) assert.ok(responderam.has(a.id), `@${a.id} não respondeu`);
+  assert.ok(!responderam.has('topicos'));
+  banco.participante({ id: 'web-x', nome: 'x', tipo: 'pessoa', papel: 'convidado', origem: 'web', email: 'x@x.com' });
+  const antes = banco.eventos().length;
+  await sala.receber({ de: 'web-x', conversa: 'painel', texto: '@todos oi, sem ferramenta' });
+  const novos = banco.eventos().slice(antes).filter((e) => e.tipo === 'resposta').map((e) => e.de);
+  assert.deepEqual([...new Set(novos)], ['claude']);
+});
