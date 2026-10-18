@@ -688,3 +688,20 @@ test('grupo: pedido no chat vira proposta, só o dono aprova, @grupo chama os me
   await sala.aprovar(banco.pendentes().find((a) => a.tipo === 'grupo').id, 'dono');
   assert.equal(sala.grupos.jogos, undefined);
 });
+
+test('ícones: um diferente para cada participante; escolhido vence; conferência barra HTML', async () => {
+  const { atribuir, conferirIcone } = await import('../lib/icones.mjs');
+  const { banco } = montar('pessoa');
+  const ps = banco.participantes();
+  const m = atribuir(ps, {});
+  const semSistema = ps.filter((p) => p.tipo !== 'sistema').map((p) => m[p.id]);
+  assert.equal(new Set(semSistema).size, semSistema.length, 'ícones repetidos');
+  const m2 = atribuir(ps, { claude: '🦊' });
+  assert.equal(m2.claude, '🦊');
+  assert.equal(Object.values(m2).filter((i) => i === '🦊').length, 1);
+  assert.equal(atribuir(ps, { claude: '🔮' }).codex, m.codex, 'trocar o do claude mudou o do codex');
+  assert.ok(conferirIcone('<b>').erro);
+  assert.ok(conferirIcone('abcdef').erro);
+  assert.equal(conferirIcone('🧑‍🚀').icone, '🧑‍🚀');
+  assert.equal(conferirIcone('').icone, '');
+});

@@ -182,12 +182,14 @@ function render() {
     const c = classe(p);
     const off = p.ativo === 0;
     return `<div class="pp ${sel === p.id ? 'on' : ''} ${off ? 'off' : ''}" data-id="${p.id}" role="button" tabindex="0">
-      <span class="t-${c}" title="${ROTULO[c]}">${icone(c)}</span>
+      <span class="ico k-${c}" title="${ROTULO[c]}">${esc(p.icone || AVATAR[c] || '💬')}</span>
       <div><div class="nm">${esc(p.nome)}</div><div class="pa">${ROTULO[c]}${p.origem === 'proposta' ? ' novo' : ''}${p.tipo === 'agente' ? infoAgente(p.id) + contas(p.id) : ''}${p.papel ? ' · ' + esc(p.papel) : ''}${p.origem === 'telegram' ? ' · Telegram' : ''}${off ? ` · desligado (${{ saiu: 'saiu', removido: 'removido pelo dono', expirou: 'convite venceu' }[p.saida] || 'fora'})` : ''}</div></div>
+      ${podeTrocar(p) ? `<button type="button" class="troca" data-troca="${p.id}" title="Trocar o ícone de ${esc(p.nome)}" aria-label="Trocar o ícone de ${esc(p.nome)}">✎</button>` : ''}
       ${e.ativos.includes(p.id) ? '<span class="vivo" title="trabalhando"></span>' : ''}
       <span class="n">${contagem(p.id)}</span></div>`;
   }).join('') || '<div class="pa" style="padding:8px">Ninguém aqui ainda.</div>';
   $('lista').querySelectorAll('.pp').forEach((d) => d.onclick = () => { sel = sel === d.dataset.id ? null : d.dataset.id; render(); });
+  $('lista').querySelectorAll('[data-troca]').forEach((b) => b.onclick = (ev) => { ev.stopPropagation(); abrirIcones(b.dataset.troca, b); });
   // conversas
   const convs = ['painel', ...new Set(e.eventos.map((x) => x.conversa).filter((c) => c !== 'painel'))];
   $('conversa').innerHTML = `<option value="todas">Todas as conversas</option>` + convs.map((c) => `<option value="${c}" ${c === conversa ? 'selected' : ''}>${esc(nomeConversa(c))}</option>`).join('');
@@ -203,7 +205,7 @@ function render() {
     const de = part(x.de), para = part(x.para), c = classe(de);
     const selo = { ferramenta: 'usa ferramenta', resultado: 'resultado', rascunho: `rascunho · aguarda aprovação #${x.meta?.aprovacao ?? ''}`, proposta: `proposta de agente · aprovação #${x.meta?.aprovacao ?? ''}`, aprovacao: 'aprovação', sistema: 'aviso', topico: 'tópico', pedido: `pedido de entrada · #${x.meta?.aprovacao ?? ''}` }[x.tipo];
     const eco = x.meta?.eco;
-    const av = x.de === eu ? '🧑‍💻' : AVATAR[c] || '💬';
+    const av = esc(de.icone || AVATAR[c] || '💬');
     return `<div class="m ${x.tipo} k-${c} ${x.de === eu ? 'meu' : ''} ${eco ? 'eco' : ''}">
       <span class="av" aria-hidden="true">${av}</span><div class="corpo">
       <div class="c"><b>${esc(de.nome)}</b>${x.de === eu ? ' <span class="tg">você</span>' : ''}${x.para && x.para !== 'sala' ? ` → ${esc(para.nome)}` : ''} · ${hora(x.hora)}
@@ -215,8 +217,45 @@ function render() {
   grafo?.desenhar();
 }
 
-// Avatar de cada mensagem pelo tipo de quem fala (as suas usam 🧑‍💻).
+// Ícone de reserva pelo tipo (o servidor manda um ícone próprio para cada participante).
 const AVATAR = { pessoa: '🙂', cliente: '🙋', agente: '🤖', ferramenta: '🛠️', sistema: '⚠️' };
+
+// Trocar ícone: cada um troca o seu; o dono troca o de todos (agentes também).
+const OPCOES_ICONE = ['🤖','🦉','🦊','🐙','🧠','🦾','🛰️','🧪','🐝','🦄','🐬','🦅','🐢','🦁','🐺','🪐','⚙️','🔮','🧭','📐',
+  '🙂','😎','🧑‍🚀','🧑‍🎨','🧑‍🔬','🧑‍🏫','🧑‍🍳','🧑‍💻','🦸','🧙','🐼','🐯','🐨','🐸','🐵','🌻','🌵','⭐','🍀','🎈','🔥','🎯','🎮','🎲','🚀','💡'];
+function podeTrocar(p) {
+  if (p.tipo === 'sistema') return false;
+  const e = S.estado;
+  if (!e.login) return true;
+  return Boolean(e.eu && (e.eu.dono || e.eu.id === p.id));
+}
+function abrirIcones(id, botao) {
+  document.querySelector('.pick-ico')?.remove();
+  const p = part(id);
+  const usados = new Map(S.estado.participantes.filter((x) => x.id !== id).map((x) => [x.icone, x.nome]));
+  const caixa = document.createElement('div');
+  caixa.className = 'pick-ico'; caixa.setAttribute('role', 'dialog'); caixa.setAttribute('aria-label', `Ícone de ${p.nome}`);
+  caixa.innerHTML = `<div class="q">Ícone de ${esc(p.nome)}</div>
+    <div class="grade">${OPCOES_ICONE.map((ic) => `<button type="button" data-ic="${ic}" ${ic === p.icone ? 'class="on"' : ''} ${usados.has(ic) ? `title="usado por ${esc(usados.get(ic))}"` : ''}>${ic}</button>`).join('')}</div>
+    <div class="linha"><input id="icLivre" maxlength="8" placeholder="ou cole um emoji" aria-label="Outro emoji"><button type="button" class="btn" data-ic-livre>Usar</button><button type="button" class="btn" data-ic="">Padrão</button><button type="button" class="btn" data-fecha>Fechar</button></div>
+    <div class="erro" aria-live="polite"></div>`;
+  document.body.append(caixa);
+  const r = botao.getBoundingClientRect();
+  caixa.style.top = `${Math.min(window.innerHeight - caixa.offsetHeight - 8, r.bottom + 4) + window.scrollY}px`;
+  caixa.style.left = `${Math.max(8, Math.min(window.innerWidth - caixa.offsetWidth - 8, r.left))}px`;
+  const salvar = async (icone) => {
+    const res = await postar('/api/icone', { id, icone, de: eu });
+    if (res.erro) { caixa.querySelector('.erro').textContent = res.erro; return; }
+    caixa.remove();
+  };
+  caixa.onclick = (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-fecha')) return caixa.remove();
+    if (b.hasAttribute('data-ic-livre')) return salvar(caixa.querySelector('#icLivre').value);
+    if (b.hasAttribute('data-ic')) salvar(b.dataset.ic);
+  };
+  setTimeout(() => document.addEventListener('click', function fora(ev) { if (!caixa.contains(ev.target)) { caixa.remove(); document.removeEventListener('click', fora); } }), 0);
+}
 
 // ---------- Tópicos: lista à esquerda e resumo no alto do chat ----------
 const ESTADO_TXT = { 'em debate': 'em debate', decidido: 'decidido', parado: 'parado' };

@@ -69,7 +69,7 @@ export async function iniciar(aoMudar) {
   on('participante', (d) => {
     // Novo entra na lista; já existente (convidado ligado/desligado) é atualizado.
     const i = S.estado.participantes.findIndex((p) => p.id === d.id);
-    if (i < 0) S.estado.participantes.push(d); else S.estado.participantes[i] = { ...S.estado.participantes[i], ...d };
+    if (i < 0) S.estado.participantes.push({ ...d, icone: S.icones?.[d.id] }); else S.estado.participantes[i] = { ...S.estado.participantes[i], ...d, icone: S.icones?.[d.id] || S.estado.participantes[i].icone };
     // Agente novo aprovado: busca de novo motor, nível e esforço.
     if (d.tipo === 'agente') fetch('/api/estado').then((r) => r.json()).then((e) => { S.estado.agentes = e.agentes; aoMudar('agentes', e.agentes); }).catch(() => {});
   });
@@ -77,6 +77,8 @@ export async function iniciar(aoMudar) {
     S.estado.pendentes = S.estado.pendentes.filter((p) => p.id !== d.id);
     if (d.estado === 'pendente') S.estado.pendentes.push(d);
   });
+  // O mapa de ícones pode chegar antes do participante novo: guarda e aplica quando ele entrar.
+  on('icones', (d) => { S.icones = d; for (const p of S.estado.participantes) if (d[p.id]) p.icone = d[p.id]; });
   on('ativos', (d) => { S.estado.ativos = d; });
   on('config', (d) => { S.estado.config = d; S.estado.perfil.teto_turnos = d.teto_turnos; S.estado.perfil.teto_diario = d.teto_diario; });
   on('stats', (d) => { S.estado.stats = d; });

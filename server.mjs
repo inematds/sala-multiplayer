@@ -11,6 +11,7 @@ import { claude, codex, falso } from './lib/agentes.mjs';
 import { lerModelos, lerNiveis } from './lib/modelos.mjs';
 import { CAMPOS_SALA, CAMPOS_AGENTE, senhaConfere } from './lib/config.mjs';
 import crypto from 'node:crypto';
+import { lerIcones, gravarIcones, conferirIcone, atribuir } from './lib/icones.mjs';
 import { criarAcesso, cookieVolta, criarSessoes, criarFreio, VERIFICADOR, LOGIN_INEMA } from './lib/acesso.mjs';
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
@@ -189,12 +190,17 @@ const corpo = (req) => new Promise((ok, falha) => {
 });
 const daEquipe = (id) => (perfil.pessoas || []).some((p) => p.id === id);
 
+// Ícones: escolhidos (data/<perfil>/icones.json) + padrão, um diferente para cada participante.
+const icones = lerIcones(dados);
+const mapaIcones = () => atribuir(banco.participantes(), icones);
+banco.bus.on('participante', () => banco.bus.emit('icones', mapaIcones()));
+
 function estado(eu) {
   return {
     login, eu: resumoEu(eu),
     perfil: { id: perfil.id, nome: perfil.nome, descricao: perfil.descricao, equipe: perfil.pessoas, teto_diario: perfil.teto_diario ?? 200, teto_turnos: perfil.teto_turnos ?? 4 },
     modo: usarFalso ? 'falso' : 'real', telegram: Boolean(tg),
-    participantes: banco.participantes().map(({ email, ...p }) => p), eventos: banco.eventos(400), pendentes: banco.pendentes(),
+    participantes: (() => { const m = mapaIcones(); return banco.participantes().map(({ email, ...p }) => ({ ...p, icone: m[p.id] })); })(), eventos: banco.eventos(400), pendentes: banco.pendentes(),
     grupos: Object.values(sala.grupos),
     stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
     agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, nivel: a.nivel || 'executor', esforco: a.esforco || '', linhas_max: a.linhas_max || perfil.linhas_max || 6, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
@@ -246,11 +252,26 @@ const servidor = http.createServer(async (req, res) => {
         res.write(`event: ${tipo}\ndata: ${JSON.stringify(d)}\n\n`);
         if (tipo !== 'stats') res.write(`event: stats\ndata: ${JSON.stringify(banco.stats())}\n\n`);
       };
-      const ouvintes = ['evento', 'participante', 'aprovacao', 'ativos', 'config', 'topico'].map((t) => [t, manda(t)]);
+      const ouvintes = ['evento', 'participante', 'aprovacao', 'ativos', 'config', 'topico', 'icones'].map((t) => [t, manda(t)]);
       for (const [t, f] of ouvintes) banco.bus.on(t, f);
       const ping = setInterval(() => res.write(': ping\n\n'), 25000);
       req.on('close', () => { clearInterval(ping); for (const [t, f] of ouvintes) banco.bus.off(t, f); });
       return;
+    }
+    // Trocar ícone: cada pessoa troca o seu; o dono troca o de qualquer um (agentes também).
+    if (req.method === 'POST' && url.pathname === '/api/icone') {
+      const b = await corpo(req);
+      const alvo = banco.participantes().find((p) => p.id === b.id && p.tipo !== 'sistema');
+      if (!alvo) return json(res, { erro: 'participante não existe' }, 404);
+      const quem = login ? eu.id : b.de;
+      if (!(quem === alvo.id || quem === sala.dono || (!login && daEquipe(quem)))) return json(res, { erro: 'só o próprio ou o dono troca o ícone' }, 403);
+      const v = conferirIcone(b.icone);
+      if (v.erro) return json(res, { erro: v.erro }, 400);
+      if (v.icone && Object.entries(mapaIcones()).some(([id, ic]) => ic === v.icone && id !== alvo.id && icones[id])) return json(res, { erro: 'esse ícone já é de outro participante' }, 409);
+      if (v.icone) icones[alvo.id] = v.icone; else delete icones[alvo.id];
+      gravarIcones(dados, icones);
+      banco.bus.emit('icones', mapaIcones());
+      return json(res, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/api/mensagem') {
       const b = await corpo(req);
