@@ -195,6 +195,7 @@ function estado(eu) {
     perfil: { id: perfil.id, nome: perfil.nome, descricao: perfil.descricao, equipe: perfil.pessoas, teto_diario: perfil.teto_diario ?? 200, teto_turnos: perfil.teto_turnos ?? 4 },
     modo: usarFalso ? 'falso' : 'real', telegram: Boolean(tg),
     participantes: banco.participantes().map(({ email, ...p }) => p), eventos: banco.eventos(400), pendentes: banco.pendentes(),
+    grupos: Object.values(sala.grupos),
     stats: banco.stats(), ativos: [...sala.ativos], contas: banco.contas(),
     agentes: Object.values(sala.agentes).map((a) => ({ id: a.id, motor: a.motor, nivel: a.nivel || 'executor', esforco: a.esforco || '', linhas_max: a.linhas_max || perfil.linhas_max || 6, teto_diario: a.teto_diario || null, ferramentas: a.ferramentas || [] })),
     niveis, config: sala.config(),
@@ -287,8 +288,8 @@ const servidor = http.createServer(async (req, res) => {
       const quem = login ? eu : (perfil.pessoas || []).find((p) => p.id === b.de);
       // Mudança de configuração e convidado: só o dono, com a senha (o "Você é" do painel não prova quem é).
       const tipoAp = banco.aprovacao(Number(b.id))?.tipo;
-      if (tipoAp === 'config' || tipoAp === 'convite') {
-        if (!ehDono && !senhaConfere(b.senha)) return json(res, { erro: `${tipoAp === 'config' ? 'mudança de configuração' : 'convidado'}: só o dono decide, com a senha` }, 403);
+      if (tipoAp === 'config' || tipoAp === 'convite' || tipoAp === 'grupo') {
+        if (!ehDono && !senhaConfere(b.senha)) return json(res, { erro: `${{ config: 'mudança de configuração', convite: 'convidado', grupo: 'grupo' }[tipoAp]}: só o dono decide, com a senha` }, 403);
         b.de = sala.dono;
       } else if (!quem || !(perfil.aprovadores || []).includes(quem.papel)) return json(res, { erro: 'sem permissão para aprovar' }, 403);
       let r;

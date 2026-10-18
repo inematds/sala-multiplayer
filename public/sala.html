@@ -113,10 +113,10 @@ function senhaDono() {
 }
 function cartaoConfig(a) {
   return `<div class="ap" data-id="${a.id}">
-    <div class="q">#${a.id} · ${esc(part(a.de).nome)} propõe mudar a configuração · pedido de ${esc(part(a.para).nome)} · ${hora(a.hora)}</div>
+    <div class="q">#${a.id} · ${esc(part(a.de).nome)} propõe ${a.tipo === 'grupo' ? 'um grupo de agentes' : 'mudar a configuração'} · pedido de ${esc(part(a.para).nome)} · ${hora(a.hora)}</div>
     <div class="prop">${esc(a.texto)}</div>
     ${senhaDono()}
-    <div class="acoes"><button class="btn pri" data-a="aprovar">Aprovar mudança</button><button class="btn" data-a="recusar">Recusar</button></div>
+    <div class="acoes"><button class="btn pri" data-a="aprovar">${a.tipo === 'grupo' ? 'Aprovar grupo' : 'Aprovar mudança'}</button><button class="btn" data-a="recusar">Recusar</button></div>
   </div>`;
 }
 function cartaoConvite(a) {
@@ -157,12 +157,12 @@ function render() {
   $('k-aprov-box').classList.toggle('tem', e.pendentes.length > 0);
   $('k-hoje').textContent = e.stats.chamadasHoje;
   $('k-teto').textContent = `teto diário: ${e.perfil.teto_diario}`;
-  $('dica').textContent = `Agentes: ${e.participantes.filter((p) => p.tipo === 'agente').map((p) => '@' + p.id).join(', ')} · até ${e.config?.teto_rodada ?? 12} respostas de agentes por mensagem · peça "cria um agente que..." para propor um novo`;
+  $('dica').textContent = `Agentes: ${e.participantes.filter((p) => p.tipo === 'agente').map((p) => '@' + p.id).join(', ')} · até ${e.config?.teto_rodada ?? 12} respostas de agentes por mensagem · @todos chama todos${(e.grupos || []).length ? ' · grupos: ' + e.grupos.map((g) => '@' + g.id).join(', ') : ''} · peça "cria um agente que..." ou "cria o grupo @x com..."`;
   // aprovações (não redesenha um rascunho que está sendo editado)
   const lista = $('aprov-lista');
   const emEdicao = lista.contains(document.activeElement);
   if (!emEdicao) {
-    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => a.tipo === 'agente' ? cartaoAgente(a) : a.tipo === 'config' ? cartaoConfig(a) : a.tipo === 'convite' ? cartaoConvite(a) : `
+    lista.innerHTML = e.pendentes.length ? e.pendentes.map((a) => a.tipo === 'agente' ? cartaoAgente(a) : a.tipo === 'config' || a.tipo === 'grupo' ? cartaoConfig(a) : a.tipo === 'convite' ? cartaoConvite(a) : `
       <div class="ap" data-id="${a.id}">
         <div class="q">#${a.id} · ${esc(part(a.de).nome)} → ${esc(part(a.para).nome)} · ${esc(nomeConversa(a.conversa))} · ${hora(a.hora)}</div>
         <textarea aria-label="texto da resposta">${esc(a.texto)}</textarea>

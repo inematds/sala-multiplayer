@@ -658,3 +658,33 @@ test('@todos: dono chama todos os agentes (menos o organizador); convidado não'
   const novos = banco.eventos().slice(antes).filter((e) => e.tipo === 'resposta').map((e) => e.de);
   assert.deepEqual([...new Set(novos)], ['claude']);
 });
+
+test('grupo: pedido no chat vira proposta, só o dono aprova, @grupo chama os membros e some ao apagar', async () => {
+  const banco = abrirBanco(':memory:');
+  const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-teste-'));
+  const motor = async (ctx) => {
+    const t = ctx.tarefa ? '' : String(ctx.gatilho?.texto || '');
+    if (t.includes('apaga o grupo')) return 'Proponho apagar.\nPROPOSTA_GRUPO: {"id": "jogos", "remover": true}';
+    if (t.includes('grupo errado')) return 'Proponho.\nPROPOSTA_GRUPO: {"id": "codex", "membros": ["claude", "codex"]}';
+    if (t.includes('cria o grupo')) return 'Proponho o grupo.\nPROPOSTA_GRUPO: {"id": "jogos", "nome": "Jogos", "membros": ["@claude", "codex"]}';
+    return 'ok';
+  };
+  const sala = criarSala({ perfil: perfil('pessoa'), banco, motor, raiz: RAIZ, dados, externo: async () => {} });
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'cria o grupo jogos com claude e codex' });
+  const p = banco.pendentes().find((a) => a.tipo === 'grupo');
+  assert.ok(p, 'proposta de grupo não apareceu');
+  assert.ok(!banco.eventos().some((e) => e.tipo === 'resposta' && e.texto.includes('PROPOSTA_GRUPO')), 'marcador vazou no chat');
+  await assert.rejects(() => sala.aprovar(p.id, 'tiza'), /só o dono/);
+  await sala.aprovar(p.id, 'dono');
+  assert.deepEqual(sala.grupos.jogos.membros, ['claude', 'codex']);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dados, 'grupos.json'), 'utf8')).jogos.membros, ['claude', 'codex']);
+  const antes = banco.eventos().length;
+  await sala.receber({ de: 'tiza', conversa: 'painel', texto: '@jogos o que acham?' });
+  const resp = new Set(banco.eventos().slice(antes).filter((e) => e.tipo === 'resposta').map((e) => e.de));
+  assert.deepEqual([...resp].sort(), ['claude', 'codex']);
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'grupo errado' });
+  assert.ok(banco.eventos().some((e) => e.tipo === 'sistema' && /já é um agente/.test(e.texto)));
+  await sala.receber({ de: 'dono', conversa: 'painel', texto: 'apaga o grupo' });
+  await sala.aprovar(banco.pendentes().find((a) => a.tipo === 'grupo').id, 'dono');
+  assert.equal(sala.grupos.jogos, undefined);
+});
