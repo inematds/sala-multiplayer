@@ -635,3 +635,13 @@ test('tópicos: o agente recebe os tópicos abertos e a regra de não inventar d
   assert.match(ctxVisto.prompt, /#2 primeiro, sem ferramenta — Resumo de:/);
   assert.match(ctxVisto.prompt, /Dono: @codex segundo/);
 });
+
+test('convidado web com o email de uma pessoa do perfil: ao subir, o email volta para a pessoa', () => {
+  const banco = abrirBanco(':memory:');
+  const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-teste-'));
+  banco.participante({ id: 'web-nei', nome: 'nei', tipo: 'pessoa', papel: 'convidado', origem: 'web', email: 'nei@x.com' });
+  const extra = { pessoas: [{ id: 'dono', nome: 'Dono', papel: 'dono', email: 'NEI@x.com' }] };
+  criarSala({ perfil: { ...perfil('pessoa'), ...extra }, banco, motor: falso, raiz: RAIZ, dados, externo: async () => {} });
+  assert.equal(banco.porEmail('nei@x.com')?.id, 'dono');
+  assert.equal(banco.participantes().find((p) => p.id === 'web-nei').ativo, 0);
+});
